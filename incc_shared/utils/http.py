@@ -14,5 +14,5 @@ def create_response(body, status_code=200, headers=None):
     return {
         "statusCode": status_code,
         "headers": cors_headers,
-        "body": json.dumps(body),
+        "body": json.dumps(body, default=str),
     }
