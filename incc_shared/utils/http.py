@@ -1,7 +1,7 @@
 import json
 
 
-def create_response(body, status_code=200, headers=None):
+def create_response(body, status_code=200, headers=None, isBase64Encoded=False):
     """Generate a Lambda Proxy response with CORS headers."""
     cors_headers = {
         "Access-Control-Allow-Origin": "*",
@@ -14,5 +14,6 @@ def create_response(body, status_code=200, headers=None):
     return {
         "statusCode": status_code,
         "headers": cors_headers,
-        "body": json.dumps(body, default=str),
+        "body": body if isBase64Encoded else json.dumps(body, default=str),
+        "isBase64Encoded": isBase64Encoded,
     }
