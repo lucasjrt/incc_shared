@@ -6,7 +6,7 @@ def create_response(body, status_code=200, headers=None, isBase64Encoded=False):
     cors_headers = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Headers": "Authorization,Content-Type",
     }
     if headers:
         cors_headers.update(headers)
