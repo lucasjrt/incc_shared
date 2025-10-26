@@ -48,7 +48,7 @@ class UserModel(DynamoBaseModel):
     gsi_user_pk: Optional[str] = None  # GSI2 PK
     gsi_user_sk: Optional[str] = None  # GSI1/GSI2 SK
 
-    ENTITY_TEMPLATE = "USER#{userId}"
+    ENTITY_TEMPLATE: Optional[str] = "USER#{userId}"
 
     # declare gsi names used by this subclass (optional)
     GSI_FIELD_NAMES = ["gsi_email_pk", "gsi_user_pk", "gsi_user_sk"]
