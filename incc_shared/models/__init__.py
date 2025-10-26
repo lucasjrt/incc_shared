@@ -1,2 +1,2 @@
-from organization import OrganizationModel
-from user import UserModel
+from .organization import OrganizationModel
+from .user import UserModel
