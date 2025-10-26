@@ -109,8 +109,8 @@ class DynamoBaseModel(BaseModel):
     @field_validator("orgId")
     @classmethod
     def validate_orgid(cls, v: str) -> str:
-        if not is_valid_ulid(v):
-            raise ValueError("orgId must look like a ULID (26 chars)")
+        if not is_valid_ulid(v) and v != "system":
+            raise ValueError("orgId must look like a ULID (26 chars) or be system")
         return v
 
     # convert to dict suitable for boto3 put_item (plain python types)
