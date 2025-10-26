@@ -22,6 +22,7 @@ class DynamoBaseModel(BaseModel):
     # canonical key fields that commonly exist; subclasses may or may not use them
     tenant: Optional[str] = Field(None, description="PK (e.g. ORG#<id>)")
     entity: Optional[str] = Field(None, description="SK (e.g. USER#<id>)")
+    orgId: str = Field(..., description="The ID this entity belongs to")
 
     # created/updated audit
     createdAt: Optional[str] = Field(None, description="ISO UTC timestamp")
