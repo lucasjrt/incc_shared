@@ -50,8 +50,7 @@ class UserModel(DynamoBaseModel):
 
     ENTITY_TEMPLATE: Optional[str] = "USER#{userId}"
 
-    # declare gsi names used by this subclass (optional)
-    GSI_FIELD_NAMES = ["gsi_email_pk", "gsi_user_pk", "gsi_user_sk"]
+    GSI_FIELD_NAMES: List[str] = ["gsi_email_pk", "gsi_user_pk", "gsi_user_sk"]
 
     @field_validator("userId")
     @classmethod
