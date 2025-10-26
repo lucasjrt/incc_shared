@@ -1,2 +1,2 @@
 from organization import OrganizationModel
-from user import User
+from user import UserModel

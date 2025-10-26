@@ -34,7 +34,7 @@ class Role(str, Enum):
     USER = "USER"
 
 
-class User(DynamoBaseModel):
+class UserModel(DynamoBaseModel):
     userId: str = Field(..., description="Cognito username")
     orgId: str = Field(..., description="Organization ulid")
     email: EmailStr
