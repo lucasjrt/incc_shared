@@ -46,4 +46,4 @@ class OrganizationModel(DynamoBaseModel):
         None, description="Dados do beneficiário"
     )
 
-    ENTITY_TEMPLATE: Optional[str] = "ORG#{orgId}"
+    ENTITY_TEMPLATE: str = "ORG#{orgId}"
