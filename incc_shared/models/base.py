@@ -36,7 +36,7 @@ class DynamoBaseModel(BaseModel):
 
     # --- subclass override points ---
     # Template example: "USER#{userId}"
-    ENTITY_TEMPLATE: Optional[str] = None
+    ENTITY_TEMPLATE: str
 
     # GSI field names the subclasses may define; by default none.
     # Subclasses can also override compute_additional_gsis to compute different fields.
