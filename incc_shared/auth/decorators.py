@@ -56,7 +56,9 @@ def required_permissions(*allowed_permissions, match="any"):
                 if match == "all":
                     ok = all(p in features for p in allowed_permissions)
                 elif match == "any":
-                    ok = bool(features.intersection(allowed_permissions))
+                    feature_set = set(features)
+                    permission_set = set(allowed_permissions)
+                    ok = bool(feature_set & permission_set)
                 else:
                     raise ValueError(f"Match type of {match} is not valid")
 
