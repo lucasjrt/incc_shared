@@ -38,7 +38,6 @@ class Defaults(BaseModel):
 
 
 class OrganizationModel(DynamoBaseModel):
-    orgId: str = Field(..., description="ulid")
     nossoNumero: int = Field(
         0, description="Gerencia o contador do nosso número para os boletos"
     )
@@ -46,4 +45,4 @@ class OrganizationModel(DynamoBaseModel):
         None, description="Dados do beneficiário"
     )
 
-    ENTITY_TEMPLATE: str = "ORG#{orgId}"
+    ENTITY_TEMPLATE: Optional[str] = "ORG#{orgId}"

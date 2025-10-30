@@ -36,7 +36,6 @@ class Role(str, Enum):
 
 class UserModel(DynamoBaseModel):
     userId: str = Field(..., description="Cognito username")
-    orgId: str = Field(..., description="Organization ulid")
     email: EmailStr
 
     features: List[str] = Field(
@@ -48,7 +47,7 @@ class UserModel(DynamoBaseModel):
     gsi_user_pk: Optional[str] = None  # GSI2 PK
     gsi_user_sk: Optional[str] = None  # GSI1/GSI2 SK
 
-    ENTITY_TEMPLATE: str = "USER#{userId}"
+    ENTITY_TEMPLATE: Optional[str] = "USER#{userId}"
 
     GSI_FIELD_NAMES: List[str] = ["gsi_email_pk", "gsi_user_pk", "gsi_user_sk"]
 
