@@ -43,9 +43,9 @@ class UserModel(DynamoBaseModel):
     )
     roles: List[Role] = Field(default_factory=lambda: [Role.USER])
 
-    gsi_email_pk: Optional[str] = None  # GSI1 PK
-    gsi_user_pk: Optional[str] = None  # GSI2 PK
-    gsi_user_sk: Optional[str] = None  # GSI1/GSI2 SK
+    gsi_email_pk: Optional[str] = None
+    gsi_user_pk: Optional[str] = None
+    gsi_user_sk: Optional[str] = None
 
     ENTITY_TEMPLATE: ClassVar[Optional[str]] = "USER#{userId}"
 

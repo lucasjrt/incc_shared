@@ -5,6 +5,6 @@ setup(
     version="0.1.0",
     description="Shared code for incc-app",
     packages=find_packages(),
-    install_requires=["pydantic[email]"],
+    install_requires=["pydantic[email]", "cognitojwt[sync]"],
     python_requires=">=3.8",
 )
