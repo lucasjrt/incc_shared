@@ -27,11 +27,13 @@ def required_permissions(*allowed_permissions, match="any"):
                 headers = event["headers"]
                 auth = headers.get("authorization", headers.get("Authorization"))
                 if not headers:
+                    print("Missing authorizaton header")
                     raise Unauthorized()
 
                 # Token must be valid
                 token = auth.split("Bearer ")[1]
                 if not token:
+                    print("Invalid token")
                     raise Unauthorized()
 
                 # Token must be verified
@@ -46,6 +48,7 @@ def required_permissions(*allowed_permissions, match="any"):
                 # User must exist in database (fully registered)
                 event["user"] = get_user(event["username"])
                 if not event["user"]:
+                    print("User not fully registered")
                     raise Unauthorized()
 
                 # User must have permission
@@ -58,12 +61,14 @@ def required_permissions(*allowed_permissions, match="any"):
                     raise ValueError(f"Match type of {match} is not valid")
 
                 if not ok:
+                    print("Invalid permissions")
                     raise Unauthorized()
 
                 # All good. User and username injected in context
                 return func(event, context, *args, **kwargs)
-            except (Unauthorized, IndexError, CognitoJWTException):
-                return create_response({"error": "Unauthorized"})
+            except (Unauthorized, IndexError, CognitoJWTException) as e:
+                print("Failed to authenticate/authorize:", e)
+                return create_response({"error": "Unauthorized"}, status_code=401)
 
         return wrapper
 
