@@ -7,7 +7,7 @@ import cognitojwt
 from boto3.dynamodb.conditions import Key
 from cognitojwt.exceptions import CognitoJWTException
 
-from ..utils.http import create_response
+from incc_shared.utils.http import create_response
 
 COGNITO_REGION = os.environ["COGNITO_REGION"]
 COGNITO_POOL_ID = os.environ["COGNITO_POOL_ID"]
