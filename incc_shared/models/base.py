@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, ClassVar, Dict, List, Optional, Type
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -36,11 +36,11 @@ class DynamoBaseModel(BaseModel):
 
     # --- subclass override points ---
     # Template example: "USER#{userId}"
-    ENTITY_TEMPLATE: Optional[str] = None
+    ENTITY_TEMPLATE: ClassVar[Optional[str]] = None
 
     # GSI field names the subclasses may define; by default none.
     # Subclasses can also override compute_additional_gsis to compute different fields.
-    GSI_FIELD_NAMES: List[str] = []
+    GSI_FIELD_NAMES: ClassVar[List[str]] = []
 
     @classmethod
     def compute_pk(cls, values: Dict[str, Any]) -> Optional[str]:

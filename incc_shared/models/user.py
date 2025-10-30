@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -47,9 +47,13 @@ class UserModel(DynamoBaseModel):
     gsi_user_pk: Optional[str] = None  # GSI2 PK
     gsi_user_sk: Optional[str] = None  # GSI1/GSI2 SK
 
-    ENTITY_TEMPLATE: Optional[str] = "USER#{userId}"
+    ENTITY_TEMPLATE: ClassVar[Optional[str]] = "USER#{userId}"
 
-    GSI_FIELD_NAMES: List[str] = ["gsi_email_pk", "gsi_user_pk", "gsi_user_sk"]
+    GSI_FIELD_NAMES: ClassVar[List[str]] = [
+        "gsi_email_pk",
+        "gsi_user_pk",
+        "gsi_user_sk",
+    ]
 
     @field_validator("userId")
     @classmethod

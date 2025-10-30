@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional
+from typing import ClassVar, Optional
 
 from pydantic import BaseModel, Field
 
@@ -45,4 +45,4 @@ class OrganizationModel(DynamoBaseModel):
         None, description="Dados do beneficiário"
     )
 
-    ENTITY_TEMPLATE: Optional[str] = "ORG#{orgId}"
+    ENTITY_TEMPLATE: ClassVar[Optional[str]] = "ORG#{orgId}"
