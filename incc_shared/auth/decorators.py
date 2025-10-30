@@ -66,9 +66,17 @@ def required_permissions(*allowed_permissions, match="any"):
 
                 # All good. User and username injected in context
                 return func(event, context, *args, **kwargs)
-            except (Unauthorized, IndexError, CognitoJWTException) as e:
+            except (
+                AttributeError,
+                Unauthorized,
+                IndexError,
+                CognitoJWTException,
+                ValueError,
+            ) as e:
                 print("Failed to authenticate/authorize:", e)
-                return create_response({"error": "Unauthorized"}, status_code=401)
+            except Exception as e:
+                print("Got an unexpected exception:", e)
+            return create_response({"error": "Unauthorized"}, status_code=401)
 
         return wrapper
 
