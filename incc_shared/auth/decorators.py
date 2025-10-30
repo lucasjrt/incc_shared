@@ -20,7 +20,7 @@ class Unauthorized(Exception):
 
 def required_permissions(*allowed_permissions, match="any"):
     def decorator(func):
-        @wraps
+        @wraps(func)
         def wrapper(event, context, *args, **kwargs):
             try:
                 # Auth token required
