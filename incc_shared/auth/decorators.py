@@ -1,4 +1,5 @@
 import os
+import traceback
 from functools import wraps
 
 import boto3
@@ -77,6 +78,7 @@ def required_permissions(*allowed_permissions, match="any"):
             ) as e:
                 print("Failed to authenticate/authorize:", e)
             except Exception as e:
+                traceback.print_exc()
                 print("Got an unexpected exception:", e)
             return create_response({"error": "Unauthorized"}, status_code=401)
 
