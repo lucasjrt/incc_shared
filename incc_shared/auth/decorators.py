@@ -49,9 +49,12 @@ def required_permissions(*allowed_permissions, match="any"):
                 event["username"] = verified["username"]
 
                 # User must exist in database (fully registered)
-                event["user"] = get_user(event["username"])
-                if not event["user"]:
-                    raise Unauthorized("User not fully registered")
+                user = get_user(event["username"])
+                if not user:
+                    print("User not fully registered")
+                    raise Unauthorized()
+                user["orgId"] = user["tenant"].split("#")[1]
+                event["user"] = user
 
                 # User must have permission
                 features = event["user"]["features"]

@@ -44,5 +44,8 @@ class OrganizationModel(DynamoBaseModel):
     beneficiario: Optional[Beneficiario] = Field(
         None, description="Dados do beneficiário"
     )
+    defaults: Optional[Defaults] = Field(
+        None, description="Configurações padrões para a organização"
+    )
 
     ENTITY_TEMPLATE: ClassVar[Optional[str]] = "ORG#{orgId}"
