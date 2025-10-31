@@ -19,6 +19,10 @@ class Unauthorized(Exception):
     pass
 
 
+class Forbidden(Exception):
+    pass
+
+
 def required_permissions(*allowed_permissions, match="any"):
     def decorator(func):
         @wraps(func)
@@ -28,14 +32,12 @@ def required_permissions(*allowed_permissions, match="any"):
                 headers = event["headers"]
                 auth = headers.get("authorization", headers.get("Authorization"))
                 if not headers:
-                    print("Missing authorizaton header")
-                    raise Unauthorized()
+                    raise Unauthorized("Missing authorization header")
 
                 # Token must be valid
                 token = auth.split("Bearer ")[1]
                 if not token:
-                    print("Invalid token")
-                    raise Unauthorized()
+                    raise Unauthorized("Ivalid token")
 
                 # Token must be verified
                 verified = cognitojwt.decode(
@@ -49,8 +51,7 @@ def required_permissions(*allowed_permissions, match="any"):
                 # User must exist in database (fully registered)
                 event["user"] = get_user(event["username"])
                 if not event["user"]:
-                    print("User not fully registered")
-                    raise Unauthorized()
+                    raise Unauthorized("User not fully registered")
 
                 # User must have permission
                 features = event["user"]["features"]
@@ -64,8 +65,8 @@ def required_permissions(*allowed_permissions, match="any"):
                     raise ValueError(f"Match type of {match} is not valid")
 
                 if not ok:
-                    print("Invalid permissions")
-                    raise Unauthorized()
+                    print()
+                    raise Forbidden("Invalid permissions")
 
                 # All good. User and username injected in context
                 return func(event, context, *args, **kwargs)
@@ -76,7 +77,10 @@ def required_permissions(*allowed_permissions, match="any"):
                 CognitoJWTException,
                 ValueError,
             ) as e:
-                print("Failed to authenticate/authorize:", e)
+                print("Failed to authenticate:", e)
+            except Forbidden as e:
+                print("Failed to authorize:", e)
+                return create_response({"error": "Forbidden"}, status_code=403)
             except Exception as e:
                 traceback.print_exc()
                 print("Got an unexpected exception:", e)
