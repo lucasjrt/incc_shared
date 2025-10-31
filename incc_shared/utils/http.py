@@ -20,6 +20,6 @@ def create_response(body=None, status_code=200, headers=None, isBase64Encoded=Fa
     }
 
     if body:
-        payload["body"] = (body if isBase64Encoded else json.dumps(body, default=str),)
+        payload["body"] = body if isBase64Encoded else json.dumps(body, default=str)
 
     return payload
