@@ -6,19 +6,6 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from incc_shared.models.helper import is_valid_ulid, utc_now_iso
 
 
-# -------------------------
-# helpers / regexes
-# -------------------------
-def _to_decimal(obj: Any) -> Any:
-    if isinstance(obj, float):
-        return Decimal(str(obj))
-    if isinstance(obj, dict):
-        return {k: _to_decimal(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_to_decimal(v) for v in obj]
-    return obj
-
-
 class DynamoBaseModel(BaseModel):
     """
     Base model for DynamoDB items.
@@ -42,7 +29,7 @@ class DynamoBaseModel(BaseModel):
         None, description="Usuario que atualizou o recurso"
     )
 
-    model_config = ConfigDict(populate_by_name=True, json_encoders={Decimal: float})
+    model_config = ConfigDict(populate_by_name=True)
 
     # --- subclass override points ---
     # Template example: "USER#{userId}"
@@ -126,7 +113,7 @@ class DynamoBaseModel(BaseModel):
         d = self.model_dump()
         if exclude_none:
             d = {k: v for k, v in d.items() if v is not None}
-        return _to_decimal(d)
+        return d
 
     @classmethod
     def from_item(

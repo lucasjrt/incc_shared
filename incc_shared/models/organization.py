@@ -1,3 +1,4 @@
+from decimal import Decimal
 from enum import Enum
 from typing import ClassVar, Optional
 
@@ -28,7 +29,7 @@ class Beneficiario(BaseModel):
 
 class Juros(BaseModel):
     tipo: TipoJuros
-    valor: float
+    valor: Decimal
 
 
 class Defaults(BaseModel):
