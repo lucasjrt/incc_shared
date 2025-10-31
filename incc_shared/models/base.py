@@ -1,12 +1,22 @@
+from decimal import Decimal
 from typing import Any, ClassVar, Dict, List, Optional, Type
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from incc_shared.models.helper import ULID_RE, is_valid_ulid, utc_now_iso
+from incc_shared.models.helper import is_valid_ulid, utc_now_iso
+
 
 # -------------------------
 # helpers / regexes
 # -------------------------
+def _to_decimal(obj: Any) -> Any:
+    if isinstance(obj, float):
+        return Decimal(str(obj))
+    if isinstance(obj, dict):
+        return {k: _to_decimal(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_to_decimal(v) for v in obj]
+    return obj
 
 
 class DynamoBaseModel(BaseModel):
@@ -32,7 +42,7 @@ class DynamoBaseModel(BaseModel):
         None, description="Usuario que atualizou o recurso"
     )
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, json_encoders={Decimal: float})
 
     # --- subclass override points ---
     # Template example: "USER#{userId}"
@@ -59,9 +69,7 @@ class DynamoBaseModel(BaseModel):
             return values.get("entity")
 
     @classmethod
-    def compute_additional_gsis(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Optional[str]]:
+    def compute_additional_gsis(cls, _: Dict[str, Any]) -> Dict[str, Optional[str]]:
         """
         Subclasses override to compute GSIs specific to them.
         Return mapping gsi_field_name -> value (or None to omit).
@@ -118,7 +126,7 @@ class DynamoBaseModel(BaseModel):
         d = self.model_dump()
         if exclude_none:
             d = {k: v for k, v in d.items() if v is not None}
-        return d
+        return _to_decimal(d)
 
     @classmethod
     def from_item(
