@@ -1,3 +1,4 @@
+import json
 import traceback
 from functools import wraps
 
@@ -15,15 +16,17 @@ def handler(model=None):
                 if not model:
                     return func(event, context, *args, **kwargs)
 
-                body = event["body"]
-                if not body:
+                try:
+                    body = json.loads(event["body"])
+                    if not body:
+                        raise BadRequest()
+                except json.JSONDecodeError as e:
+                    print("Failed to decode json:", e)
                     raise BadRequest()
 
                 try:
                     parsed = model(**body)
                 except ValidationError as e:
-                    import json
-
                     for err in e.errors():
                         print(f"- {json.dumps(err, indent=2)}")
                     raise BadRequest()
