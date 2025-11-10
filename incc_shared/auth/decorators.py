@@ -2,13 +2,12 @@ import os
 import traceback
 from functools import wraps
 
-import boto3
 import cognitojwt
-from boto3.dynamodb.conditions import Key
 from cognitojwt.exceptions import CognitoJWTException
 
 from incc_shared.exceptions import Forbidden, Unauthorized
-from incc_shared.utils.http import create_response
+from incc_shared.handler.http import create_response
+from incc_shared.storage.user import get_user
 
 COGNITO_REGION = os.environ["COGNITO_REGION"]
 COGNITO_POOL_ID = os.environ["COGNITO_POOL_ID"]
@@ -85,26 +84,3 @@ def required_permissions(*allowed_permissions, match="any"):
         return wrapper
 
     return decorator
-
-
-def get_user(username: str):
-    user_key = f"USER#{username}"
-    dynamodb = boto3.resource("dynamodb")
-    table = dynamodb.Table(DYNAMODB_TABLE)
-
-    response = table.query(
-        TableName=DYNAMODB_TABLE,
-        IndexName="user_index",
-        KeyConditionExpression=Key("gsi_user_pk").eq(user_key),
-    )
-
-    if response["Count"] > 1:
-        print(f"User {user_key} is duplicate in database. It should never happen")
-        print(f"Found {response['Count']} occurences in the database")
-        raise ValueError(f"Duplicate user in database: {user_key}")
-    elif response["Count"] == 0:
-        print(f"User {user_key} not found in database. Complete registration required")
-        return None
-
-    user = response["Items"][0]
-    return user
