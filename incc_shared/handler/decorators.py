@@ -27,7 +27,7 @@ def handler(model=None):
                     for err in e.errors():
                         print(f"- {json.dumps(err, indent=2)}")
                     raise BadRequest()
-                return func(event, context, model=model, *args, **kwargs)
+                return func(event, context, model=parsed, *args, **kwargs)
             except BadRequest:
                 return create_response({"error": "Bad request"}, status_code=400)
             except Unauthorized:
