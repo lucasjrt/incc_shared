@@ -26,4 +26,5 @@ def update_org(orgId: str, items: Defaults):
         "entity": tenant_key,
     }
     data = items.model_dump()
-    return update_dynamo_item(key, data)
+    defaults = {"defaults": data}
+    return update_dynamo_item(key, defaults)
