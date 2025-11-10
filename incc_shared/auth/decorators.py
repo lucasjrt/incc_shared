@@ -7,20 +7,13 @@ import cognitojwt
 from boto3.dynamodb.conditions import Key
 from cognitojwt.exceptions import CognitoJWTException
 
+from incc_shared.exceptions import Forbidden, Unauthorized
 from incc_shared.utils.http import create_response
 
 COGNITO_REGION = os.environ["COGNITO_REGION"]
 COGNITO_POOL_ID = os.environ["COGNITO_POOL_ID"]
 COGNITO_CLIENT_ID = os.environ["COGNITO_CLIENT_ID"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
-
-
-class Unauthorized(Exception):
-    pass
-
-
-class Forbidden(Exception):
-    pass
 
 
 def required_permissions(*allowed_permissions, match="any"):
