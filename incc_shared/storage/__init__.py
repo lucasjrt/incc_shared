@@ -71,4 +71,4 @@ def update_dynamo_item(key: dict, data: dict):
 
 
 def patch_dict(whole: dict, to_patch: dict):
-    whole.update({k: v for k, v in to_patch if k in whole})
+    whole.update({k: v for k, v in to_patch.items() if k in whole})
