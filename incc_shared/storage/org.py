@@ -1,7 +1,7 @@
 from boto3.dynamodb.conditions import Key
 
-from incc_shared.exceptions import ServerError
-from incc_shared.models.organization import Defaults, OrganizationModel
+from incc_shared.exceptions import BadRequest, ServerError
+from incc_shared.models.organization import OrganizationModel
 from incc_shared.storage import table, to_model, update_dynamo_item
 
 
@@ -19,12 +19,13 @@ def get_org(orgId: str):
     return to_model(query["Items"][0], OrganizationModel)
 
 
-def update_org(orgId: str, items: Defaults):
+def update_org(orgId: str, org: OrganizationModel):
+    if orgId != org.orgId:
+        raise BadRequest("Cannot change org id")
+
     tenant_key = f"ORG#{orgId}"
     key = {
         "tenant": tenant_key,
         "entity": tenant_key,
     }
-    data = items.model_dump()
-    defaults = {"defaults": data}
-    return update_dynamo_item(key, defaults)
+    return update_dynamo_item(key, org.to_item())

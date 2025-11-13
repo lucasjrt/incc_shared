@@ -19,16 +19,16 @@ def handler(model=None):
                 try:
                     body = json.loads(event["body"])
                     if not body:
-                        raise BadRequest("Missing request body")
+                        raise BadRequest("[handler] Missing request body")
                 except json.JSONDecodeError as e:
-                    raise BadRequest(f"Failed to decode json: {e}")
+                    raise BadRequest(f"[handler] Failed to decode json: {e}")
 
                 try:
                     parsed = model(**body)
                 except ValidationError as e:
                     for err in e.errors():
                         print(f"- {json.dumps(err, indent=2)}")
-                    raise BadRequest("Failed to validate model")
+                    raise BadRequest("[handler] Failed to validate model")
                 return func(event, context, model=parsed, *args, **kwargs)
             except BadRequest as e:
                 print(e)
