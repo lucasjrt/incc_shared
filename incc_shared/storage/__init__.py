@@ -68,3 +68,7 @@ def update_dynamo_item(key: dict, data: dict):
         ExpressionAttributeValues=expr_attr_values,
         ReturnValues="UPDATED_NEW",
     )
+
+
+def patch_dict(whole: dict, to_patch: dict):
+    whole.update({k: v for k, v in to_patch if k in whole})
