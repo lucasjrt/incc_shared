@@ -2,7 +2,7 @@ from boto3.dynamodb.conditions import Key
 
 from incc_shared.exceptions import BadRequest, ServerError
 from incc_shared.models.organization import OrganizationModel
-from incc_shared.models.request.org.patch import PatchOrgModel
+from incc_shared.models.request.organization.patch import PatchOrgModel
 from incc_shared.storage import table, to_model, update_dynamo_item
 
 
