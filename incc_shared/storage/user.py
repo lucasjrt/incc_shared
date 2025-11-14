@@ -1,24 +1,14 @@
-import os
-
-import boto3
 from boto3.dynamodb.conditions import Key
 
 from incc_shared.exceptions import InvalidState
-
-DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
-
-dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table(DYNAMODB_TABLE)
+from incc_shared.models.user import UserModel
+from incc_shared.storage import table, to_model
 
 
 def get_user(username: str):
     user_key = f"USER#{username}"
-    dynamodb = boto3.resource("dynamodb")
-    table = dynamodb.Table(DYNAMODB_TABLE)
 
     response = table.query(
-        TableName=DYNAMODB_TABLE,
-        IndexName="user_index",
         KeyConditionExpression=Key("gsi_user_pk").eq(user_key),
     )
 
@@ -31,4 +21,4 @@ def get_user(username: str):
         return None
 
     user = response["Items"][0]
-    return user
+    return to_model(user, UserModel)

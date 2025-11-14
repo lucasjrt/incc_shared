@@ -44,15 +44,13 @@ class UserModel(DynamoBaseModel):
     roles: List[Role] = Field(default_factory=lambda: [Role.USER])
 
     gsi_email_pk: Optional[str] = None
-    gsi_user_pk: Optional[str] = None
-    gsi_user_sk: Optional[str] = None
+    gsi_org_sk: Optional[str] = None
 
     ENTITY_TEMPLATE: ClassVar[Optional[str]] = "USER#{userId}"
 
     GSI_FIELD_NAMES: ClassVar[List[str]] = [
         "gsi_email_pk",
-        "gsi_user_pk",
-        "gsi_user_sk",
+        "gsi_org_sk",
     ]
 
     @field_validator("userId")

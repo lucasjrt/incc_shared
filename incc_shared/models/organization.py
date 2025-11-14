@@ -4,12 +4,8 @@ from typing import ClassVar, Optional
 
 from pydantic import BaseModel, Field
 
+from incc_shared.models import TipoDocumento
 from incc_shared.models.base import DynamoBaseModel
-
-
-class TipoDocumento(str, Enum):
-    CPF = "CPF"
-    CNPJ = "CNPJ"
 
 
 class TipoJuros(str, Enum):
