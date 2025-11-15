@@ -10,20 +10,12 @@ def get_user(orgId: str, username: str):
     tenant_key = f"ORG#{orgId}"
     user_key = f"USER#{username}"
 
-    response = table.query(
-        KeyConditionExpression=Key("tenant").eq(tenant_key)
-        & Key("entity").eq(user_key),
-    )
+    response = table.get_item(Key={"tenant": tenant_key, "entity": user_key})
 
-    if response["Count"] > 1:
-        print(f"User {user_key} is duplicate in database. It should never happen")
-        print(f"Found {response['Count']} occurences in the database")
-        raise InvalidState(f"Duplicate user in database: {user_key}")
-    elif response["Count"] == 0:
-        print(f"User {user_key} not found in database. Complete registration required")
+    user = response.get("Item")
+    if not user:
         return None
 
-    user = response["Items"][0]
     return to_model(user, UserModel)
 
 

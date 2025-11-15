@@ -1,6 +1,6 @@
-import ulid
 from boto3.dynamodb.conditions import Attr, Key
 from botocore.exceptions import ClientError
+from ulid import ULID
 
 from incc_shared.exceptions.errors import Conflict, InvalidState, NotFound
 from incc_shared.models.db.customer import CustomerModel
@@ -13,21 +13,12 @@ def get_customer(orgId: str, customerId: str):
     org_key = f"ORG#{orgId}"
     customer_key = f"CUSTOMER#{customerId}"
 
-    response = table.query(
-        KeyConditionExpression=Key("tenant").eq(org_key)
-        & Key("entity").eq(customer_key),
-    )
+    response = table.get_item(Key={"tenant": org_key, "entity": customer_key})
 
-    if response["Count"] > 1:
-        print(
-            f"Customer {customer_key} is duplicate in database. It should never happen"
-        )
-        print(f"Found {response['Count']} occurences in the database")
-        raise InvalidState(f"Duplicate user in database: {customer_key}")
-    elif response["Count"] == 0:
+    customer = response.get("Item")
+    if not customer:
         return None
 
-    customer = response["Items"][0]
     return to_model(customer, CustomerModel)
 
 
@@ -42,22 +33,23 @@ def list_customers(orgId: str):
     if response.get("LastEvaluatedKey"):
         raise InvalidState("App is not yet prepared to receive more pages")
 
-    return response["Items"]
+    return [to_model(c, CustomerModel) for c in response["Items"]]
 
 
 def create_customer(orgId: str, customer: CreateCustomerModel):
-    customerId = str(ulid.new())
+    customerId = str(ULID())
     model = customer.model_dump()
     model["orgId"] = orgId
     model["customerId"] = customerId
 
-    item = CustomerModel.model_validate(customer.model_dump())
+    item = CustomerModel.model_validate(model)
     assert item.entity is not None, "Entity id was expected"
 
     try:
         table.put_item(
             Item=item.to_item(), ConditionExpression=Attr(item.entity).not_exists()
         )
+        return customerId
     except ClientError as e:
         error_code = e.response.get("Error", {}).get("Code")
         if error_code == "ConditionalCheckFailedException":
@@ -69,7 +61,7 @@ def create_customer(orgId: str, customer: CreateCustomerModel):
 
 
 def update_customer(orgId: str, customerId: str, to_update: UpdateCustomerModel):
-    customer = get_customer(customerId)
+    customer = get_customer(orgId, customerId)
     if not customer:
         return NotFound("Customer not found")
 
