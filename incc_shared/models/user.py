@@ -43,6 +43,7 @@ class UserModel(DynamoBaseModel):
     )
     roles: List[Role] = Field(default_factory=lambda: [Role.USER])
 
+    gsi_user_pk: Optional[str] = None
     gsi_email_pk: Optional[str] = None
     gsi_org_sk: Optional[str] = None
 
@@ -86,10 +87,12 @@ class UserModel(DynamoBaseModel):
     def compute_additional_gsis(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Optional[str]]:
+        userId = values.get("userId")
         email = values.get("email")
         org_id = values.get("orgId")
 
         result: Dict[str, Optional[str]] = {}
+        result["gsi_user_pk"] = f"USER#{userId}" if userId else None
         result["gsi_email_pk"] = f"EMAIL#{email.lower()}" if email else None
         result["gsi_org_sk"] = f"ORG#{org_id}" if org_id else None
         return result
