@@ -4,8 +4,8 @@ from typing import ClassVar, Optional
 
 from pydantic import BaseModel, Field
 
-from incc_shared.models import TipoDocumento
 from incc_shared.models.base import DynamoBaseModel
+from incc_shared.models.common import TipoDocumento
 
 
 class TipoJuros(str, Enum):
