@@ -5,7 +5,7 @@ from functools import wraps
 import cognitojwt
 from cognitojwt.exceptions import CognitoJWTException
 
-from incc_shared.exceptions import Forbidden, Unauthorized
+from incc_shared.exceptions.http import Forbidden, Unauthorized
 from incc_shared.handler.http import create_response
 from incc_shared.storage.user import get_user
 
@@ -45,11 +45,9 @@ def required_permissions(*allowed_permissions, match="any"):
                 if not user:
                     print("User not fully registered")
                     raise Unauthorized()
-                user["orgId"] = user["tenant"].split("#")[1]
-                event["user"] = user
 
                 # User must have permission
-                features = event["user"]["features"]
+                features = user.features
                 if match == "all":
                     ok = all(p in features for p in allowed_permissions)
                 elif match == "any":
@@ -60,9 +58,9 @@ def required_permissions(*allowed_permissions, match="any"):
                     raise ValueError(f"Match type of {match} is not valid")
 
                 if not ok:
-                    print()
                     raise Forbidden("Invalid permissions")
 
+                event["user"] = user.to_item()
                 # All good. User and username injected in context
                 return func(event, context, *args, **kwargs)
             except (

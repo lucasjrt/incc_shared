@@ -25,9 +25,7 @@ def get_customer(orgId: str, customerId: str):
         print(f"Found {response['Count']} occurences in the database")
         raise InvalidState(f"Duplicate user in database: {customer_key}")
     elif response["Count"] == 0:
-        print(
-            f"Customer {customer_key} not found in database. Complete registration required"
-        )
+        return None
 
     customer = response["Items"][0]
     return to_model(customer, CustomerModel)
