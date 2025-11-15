@@ -7,7 +7,7 @@ from cognitojwt.exceptions import CognitoJWTException
 
 from incc_shared.exceptions.http import Forbidden, Unauthorized
 from incc_shared.handler.http import create_response
-from incc_shared.storage.user import get_user
+from incc_shared.storage.user import get_user_index_user
 
 COGNITO_REGION = os.environ["COGNITO_REGION"]
 COGNITO_POOL_ID = os.environ["COGNITO_POOL_ID"]
@@ -41,7 +41,7 @@ def required_permissions(*allowed_permissions, match="any"):
                 event["username"] = verified["username"]
 
                 # User must exist in database (fully registered)
-                user = get_user(event["username"])
+                user = get_user_index_user(event["username"])
                 if not user:
                     print("User not fully registered")
                     raise Unauthorized()
@@ -60,7 +60,7 @@ def required_permissions(*allowed_permissions, match="any"):
                 if not ok:
                     raise Forbidden("Invalid permissions")
 
-                event["user"] = user.to_item()
+                event["user"] = user.model_dump()
                 # All good. User and username injected in context
                 return func(event, context, *args, **kwargs)
             except (
