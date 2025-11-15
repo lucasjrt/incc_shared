@@ -32,7 +32,7 @@ def get_user_index_user(username: str):
 
     response = table.query(
         IndexName="user_index",
-        KeyConditionExpression=Key("entity").eq(user_key),
+        KeyConditionExpression=Key("gsi_user_pk").eq(user_key),
     )
 
     if response["Count"] > 1:
