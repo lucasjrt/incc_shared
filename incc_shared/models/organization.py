@@ -1,17 +1,10 @@
 from decimal import Decimal
-from enum import Enum
 from typing import ClassVar, Optional
 
 from pydantic import BaseModel, Field
 
 from incc_shared.models.base import DynamoBaseModel
-from incc_shared.models.common import TipoDocumento
-
-
-class TipoJuros(str, Enum):
-    taxa = "TAXA"
-    fixa = "FIXO"
-    isenta = "ISENTO"
+from incc_shared.models.common import TipoDocumento, TipoJuros
 
 
 class Beneficiario(BaseModel):
