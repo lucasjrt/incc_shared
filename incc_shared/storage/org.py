@@ -1,6 +1,6 @@
 from boto3.dynamodb.conditions import Key
 
-from incc_shared.exceptions import BadRequest, ServerError
+from incc_shared.exceptions.errors import InvalidData, InvalidState
 from incc_shared.models.organization import OrganizationModel
 from incc_shared.models.request.organization.patch import PatchOrgModel
 from incc_shared.storage import patch_dict, table, to_model, update_dynamo_item
@@ -15,7 +15,7 @@ def get_org(orgId: str):
     if len(query["Items"]) == 0:
         return None
     elif len(query["Items"]) > 1:
-        raise ServerError("Invalid state: More than one org was found with same ID")
+        raise InvalidState("More than one org was found with same ID")
 
     return to_model(query["Items"][0], OrganizationModel)
 
@@ -29,7 +29,7 @@ def update_org(orgId: str, patch: PatchOrgModel):
 
     org = get_org(orgId)
     if not org:
-        raise BadRequest("Org does not exist")
+        raise InvalidState("Org does not exist")
 
     org = org.to_item()
 
@@ -45,6 +45,6 @@ def update_org(orgId: str, patch: PatchOrgModel):
         item["defaults"] = defaults
 
     if not item:
-        raise BadRequest("At least one of defaults or beneficiario should be set")
+        raise InvalidData("At least one of defaults or beneficiario should be set")
 
     return update_dynamo_item(key, item)

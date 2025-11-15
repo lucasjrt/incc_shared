@@ -9,7 +9,7 @@ def get_user(username: str):
     user_key = f"USER#{username}"
 
     response = table.query(
-        KeyConditionExpression=Key("gsi_user_pk").eq(user_key),
+        KeyConditionExpression=Key("entity").eq(user_key),
     )
 
     if response["Count"] > 1:
