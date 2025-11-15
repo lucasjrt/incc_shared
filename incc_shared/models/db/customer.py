@@ -15,6 +15,7 @@ class Endereco(BaseModel):
 
 
 class CustomerModel(DynamoBaseModel):
+    customerId: str
     nome: str
     tipoDocumento: TipoDocumento
     documento: str
@@ -22,4 +23,4 @@ class CustomerModel(DynamoBaseModel):
     email: Optional[str] = None
     telefone: Optional[str] = None
 
-    ENTITY_TEMPLATE = "CUSTOMER#{documento}"
+    ENTITY_TEMPLATE = "CUSTOMER#{customerId}"

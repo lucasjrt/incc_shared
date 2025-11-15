@@ -35,10 +35,6 @@ class DynamoBaseModel(BaseModel):
     # Template example: "USER#{userId}"
     ENTITY_TEMPLATE: ClassVar[Optional[str]] = None
 
-    # GSI field names the subclasses may define; by default none.
-    # Subclasses can also override compute_additional_gsis to compute different fields.
-    GSI_FIELD_NAMES: ClassVar[List[str]] = []
-
     @classmethod
     def compute_pk(cls, values: Dict[str, Any]) -> Optional[str]:
         try:
@@ -56,7 +52,9 @@ class DynamoBaseModel(BaseModel):
             return values.get("entity")
 
     @classmethod
-    def compute_additional_gsis(cls, _: Dict[str, Any]) -> Dict[str, Optional[str]]:
+    def compute_additional_gsis(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Optional[str]]:
         """
         Subclasses override to compute GSIs specific to them.
         Return mapping gsi_field_name -> value (or None to omit).

@@ -48,11 +48,6 @@ class UserModel(DynamoBaseModel):
 
     ENTITY_TEMPLATE: ClassVar[Optional[str]] = "USER#{userId}"
 
-    GSI_FIELD_NAMES: ClassVar[List[str]] = [
-        "gsi_email_pk",
-        "gsi_org_sk",
-    ]
-
     @field_validator("userId")
     @classmethod
     def validate_userid(cls, v: str) -> str:
@@ -91,16 +86,10 @@ class UserModel(DynamoBaseModel):
     def compute_additional_gsis(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Optional[str]]:
-        """
-        Compute the GSIs for UserModel. This is intentionally a classmethod so each
-        subclass can implement its own logic.
-        """
         email = values.get("email")
-        user_id = values.get("userId")
         org_id = values.get("orgId")
 
         result: Dict[str, Optional[str]] = {}
         result["gsi_email_pk"] = f"EMAIL#{email.lower()}" if email else None
-        result["gsi_user_pk"] = f"USER#{user_id}" if user_id else None
-        result["gsi_user_sk"] = f"ORG#{org_id}" if org_id else None
+        result["gsi_org_sk"] = f"ORG#{org_id}" if org_id else None
         return result

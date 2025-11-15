@@ -1,3 +1,4 @@
+import ulid
 from boto3.dynamodb.conditions import Attr, Key
 from botocore.exceptions import ClientError
 
@@ -32,8 +33,10 @@ def get_customer(customerId: str):
 
 
 def create_customer(orgId: str, customer: CreateCustomerModel):
+    customerId = str(ulid.new())
     model = customer.model_dump()
     model["orgId"] = orgId
+    model["customerId"] = customerId
 
     item = CustomerModel.model_validate(customer.model_dump())
     assert item.entity is not None, "Entity id was expected"
