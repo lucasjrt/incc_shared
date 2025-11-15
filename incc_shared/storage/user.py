@@ -1,6 +1,6 @@
 from boto3.dynamodb.conditions import Key
 
-from incc_shared.exceptions import InvalidState
+from incc_shared.exceptions.errors import InvalidState
 from incc_shared.models.user import UserModel
 from incc_shared.storage import table, to_model
 

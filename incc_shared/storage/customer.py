@@ -7,14 +7,15 @@ from incc_shared.models.db.customer import CustomerModel
 from incc_shared.models.request.customer.create import CreateCustomerModel
 from incc_shared.models.request.customer.update import UpdateCustomerModel
 from incc_shared.storage import patch_dict, table, to_model, update_dynamo_item
-from incc_shared.storage.org import get_org
 
 
-def get_customer(customerId: str):
+def get_customer(orgId: str, customerId: str):
+    org_key = f"ORG#{orgId}"
     customer_key = f"CUSTOMER#{customerId}"
 
     response = table.query(
-        KeyConditionExpression=Key("entity").eq(customer_key),
+        KeyConditionExpression=Key("tenant").eq(org_key)
+        & Key("entity").eq(customer_key),
     )
 
     if response["Count"] > 1:
@@ -30,6 +31,20 @@ def get_customer(customerId: str):
 
     customer = response["Items"][0]
     return to_model(customer, CustomerModel)
+
+
+def list_customers(orgId: str):
+    org_key = f"ORG#{orgId}"
+    customer_key = "CUSTOMER#"
+    response = table.query(
+        KeyConditionExpression=Key("tenant").eq(org_key)
+        & Key("entity").begins_with(customer_key),
+    )
+
+    if response.get("LastEvaluatedKey"):
+        raise InvalidState("App is not yet prepared to receive more pages")
+
+    return response["Items"]
 
 
 def create_customer(orgId: str, customer: CreateCustomerModel):
