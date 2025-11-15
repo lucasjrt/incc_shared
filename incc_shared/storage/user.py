@@ -5,11 +5,13 @@ from incc_shared.models.user import UserModel
 from incc_shared.storage import table, to_model
 
 
-def get_user(username: str):
+def get_user(orgId: str, username: str):
+    tenant_key = f"ORG#{orgId}"
     user_key = f"USER#{username}"
 
     response = table.query(
-        KeyConditionExpression=Key("entity").eq(user_key),
+        KeyConditionExpression=Key("tenant").eq(tenant_key)
+        & Key("entity").eq(user_key),
     )
 
     if response["Count"] > 1:
