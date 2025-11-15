@@ -7,9 +7,9 @@ from incc_shared.models.db.customer import Endereco
 
 
 class UpdateCustomerModel(BaseModel):
-    tipoDocumento: TipoDocumento
-    documento: str
+    tipoDocumento: Optional[TipoDocumento] = None
+    documento: Optional[str] = None
     nome: Optional[str] = None
-    endereco: Optional[Endereco]
+    endereco: Optional[Endereco] = None
     email: Optional[str] = None
     telefone: Optional[str] = None

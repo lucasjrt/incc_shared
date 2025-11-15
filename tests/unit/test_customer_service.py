@@ -1,5 +1,12 @@
 from incc_shared.models.db.customer import CustomerModel
-from incc_shared.storage.customer import delete_customer, get_customer, list_customers
+from incc_shared.models.request.customer.update import UpdateCustomerModel
+from incc_shared.storage import to_model
+from incc_shared.storage.customer import (
+    delete_customer,
+    get_customer,
+    list_customers,
+    update_customer,
+)
 
 
 def test_customer_lifecycle(
@@ -25,6 +32,18 @@ def test_customer_lifecycle(
     ids = [testCustomer.customerId, testCustomer2.customerId]
     for c in customers:
         assert c.customerId in ids
+
+    update_fields = {
+        "email": "john.doe@example.com",
+        "telefone": "9999999999",
+    }
+    update_model = to_model(update_fields, UpdateCustomerModel)
+
+    update_customer(testOrgId, testCustomer.customerId, update_model)
+    updated_customer = get_customer(testOrgId, testCustomer.customerId)
+    assert updated_customer
+    assert updated_customer.email == update_model.email
+    assert updated_customer.telefone == update_model.telefone
 
     delete_customer(testOrgId, testCustomer.customerId)
     assert get_customer(testOrgId, testCustomer.customerId) is None

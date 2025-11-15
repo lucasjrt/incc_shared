@@ -70,5 +70,17 @@ def update_dynamo_item(key: dict, data: dict):
     )
 
 
-def patch_dict(whole: dict, to_patch: dict):
-    whole.update({k: v for k, v in to_patch.items() if k in whole})
+def patch_dict(whole: dict, to_patch: dict, ignore_nulls: bool = True):
+    whole.update(
+        {
+            k: v
+            for k, v in to_patch.items()
+            if k in whole and (not ignore_nulls or v is not None)
+        }
+    )
+
+
+def fill_dict(filling: dict, filler: dict):
+    for key in filling:
+        if key in filler:
+            filling[key] = filler[key]
