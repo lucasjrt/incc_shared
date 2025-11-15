@@ -13,7 +13,7 @@ class UserIndexUserModel(BaseModel):
     orgId: str = ""
 
     gsi_user_pk: str
-    gsi_user_sk: str
+    gsi_org_sk: str
 
     @field_validator("orgId", mode="after")
     def validate_orgId(cls, v: str) -> str:
