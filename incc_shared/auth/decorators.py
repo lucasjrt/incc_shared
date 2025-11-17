@@ -7,7 +7,7 @@ from cognitojwt.exceptions import CognitoJWTException
 
 from incc_shared.exceptions.http import Forbidden, Unauthorized
 from incc_shared.handler.http import create_response
-from incc_shared.storage.user import get_user_index_user
+from incc_shared.service.user import get_user_index_user
 
 COGNITO_REGION = os.environ["COGNITO_REGION"]
 COGNITO_POOL_ID = os.environ["COGNITO_POOL_ID"]
