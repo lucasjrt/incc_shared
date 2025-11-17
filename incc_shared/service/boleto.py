@@ -1,7 +1,10 @@
+from decimal import Decimal
+
 from boto3.dynamodb.conditions import Attr
 from botocore.exceptions import ClientError
 
 from incc_shared.exceptions.errors import Conflict, InvalidState
+from incc_shared.models.common import Juros, TipoJuros
 from incc_shared.models.db.boleto.base import StatusBoleto
 from incc_shared.models.db.boleto.boleto import BoletoModel
 from incc_shared.models.organization import OrganizationModel
@@ -23,12 +26,33 @@ def update_nosso_numero(org: OrganizationModel):
     return org
 
 
+def get_default_juros():
+    return Juros(tipo=TipoJuros.taxa, valor=Decimal(1), prazo=0)
+
+
+def get_default_multa():
+    return Juros(tipo=TipoJuros.taxa, valor=Decimal(2), prazo=0)
+
+
 def create_boleto(orgId: str, boleto: CreateBoletoModel):
     org = get_org(orgId)
     if not org:
         raise InvalidState("Org does not exist")
 
     nosso_numero = org.nossoNumero
+
+    if not boleto.juros:
+        if org.defaults:
+            boleto.juros = org.defaults.juros
+        else:
+            boleto.juros = get_default_juros()
+
+    if not boleto.multa:
+        if org.defaults:
+            boleto.multa = org.defaults.multa
+        else:
+            boleto.multa = get_default_multa()
+
     model = boleto.model_dump()
     model["orgId"] = orgId
     model["nossoNumero"] = nosso_numero

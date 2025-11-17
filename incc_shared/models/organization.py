@@ -23,7 +23,7 @@ class Defaults(BaseModel):
 
 class OrganizationModel(DynamoBaseModel):
     nossoNumero: int = Field(
-        0, description="Gerencia o contador do nosso número para os boletos"
+        1, description="Gerencia o contador do nosso número para os boletos"
     )
     beneficiario: Optional[Beneficiario] = Field(
         None, description="Dados do beneficiário"
