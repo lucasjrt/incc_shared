@@ -3,7 +3,7 @@ from boto3.dynamodb.conditions import Key
 from incc_shared.exceptions.errors import InvalidState
 from incc_shared.models.db.indexes import UserIndexUserModel
 from incc_shared.models.user import UserModel
-from incc_shared.storage import table, to_model
+from incc_shared.service import table, to_model
 
 
 def get_user(orgId: str, username: str):
