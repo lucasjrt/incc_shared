@@ -16,7 +16,10 @@ def update_nosso_numero(org: OrganizationModel):
         "tenant": f"ORG#{org.orgId}",
         "entity": f"ORG#{org.orgId}",
     }
-    update_dynamo_item(key, org.to_item())
+    item = org.to_item()
+    del item["tenant"]
+    del item["entity"]
+    update_dynamo_item(key, item)
     return org
 
 
