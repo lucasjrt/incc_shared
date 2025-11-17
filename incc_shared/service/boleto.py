@@ -4,20 +4,28 @@ from botocore.exceptions import ClientError
 from incc_shared.exceptions.errors import Conflict, InvalidState
 from incc_shared.models.db.boleto.base import StatusBoleto
 from incc_shared.models.db.boleto.boleto import BoletoModel
+from incc_shared.models.organization import OrganizationModel
 from incc_shared.models.request.boleto.create import CreateBoletoModel
-from incc_shared.service import table
+from incc_shared.service import table, update_dynamo_item
 from incc_shared.service.org import get_org
 
 
-def get_next_nosso_numero(orgId: str):
-    org = get_org(orgId)
-    if not org:
-        raise InvalidState("Org should exist")
-    return org.nossoNumero
+def update_nosso_numero(org: OrganizationModel):
+    org.nossoNumero += 1
+    key = {
+        "tenant": f"ORG#{org.orgId}",
+        "entity": f"ORG#{org.orgId}",
+    }
+    update_dynamo_item(key, org.to_item())
+    return org
 
 
 def create_boleto(orgId: str, boleto: CreateBoletoModel):
-    nosso_numero = get_next_nosso_numero(orgId)
+    org = get_org(orgId)
+    if not org:
+        raise InvalidState("Org does not exist")
+
+    nosso_numero = org.nossoNumero
     model = boleto.model_dump()
     model["orgId"] = orgId
     model["nossoNumero"] = nosso_numero
@@ -41,6 +49,9 @@ def create_boleto(orgId: str, boleto: CreateBoletoModel):
             error_message = e.response.get("Error", {}).get("Message")
             print(f"An unexpected error occurred: {error_code} - {error_message}")
             raise
+
+    update_nosso_numero(org)
+
     return nosso_numero
 
 
