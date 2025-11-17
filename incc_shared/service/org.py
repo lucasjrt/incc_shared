@@ -3,7 +3,7 @@ from boto3.dynamodb.conditions import Key
 from incc_shared.exceptions.errors import InvalidData, InvalidState
 from incc_shared.models.organization import OrganizationModel
 from incc_shared.models.request.organization.patch import PatchOrgModel
-from incc_shared.storage import patch_dict, table, to_model, update_dynamo_item
+from incc_shared.service import patch_dict, table, to_model, update_dynamo_item
 
 
 def get_org(orgId: str):

@@ -1,15 +1,7 @@
-from typing import Optional
+from pydantic import Field
 
-from pydantic import BaseModel
-
-from incc_shared.models.common import TipoDocumento
-from incc_shared.models.db.customer import Endereco
+from incc_shared.models.db.customer.base import CustomerBase
 
 
-class CreateCustomerModel(BaseModel):
-    tipoDocumento: TipoDocumento
-    documento: str
-    nome: str
-    endereco: Endereco
-    email: Optional[str] = None
-    telefone: Optional[str] = None
+class CreateCustomerModel(CustomerBase):
+    customerId: str = Field("", exclude=True)

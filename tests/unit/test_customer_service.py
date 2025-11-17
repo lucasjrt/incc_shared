@@ -1,7 +1,7 @@
 from incc_shared.models.db.customer import CustomerModel
 from incc_shared.models.request.customer.update import UpdateCustomerModel
-from incc_shared.storage import to_model
-from incc_shared.storage.customer import (
+from incc_shared.service import to_model
+from incc_shared.service.customer import (
     delete_customer,
     get_customer,
     list_customers,

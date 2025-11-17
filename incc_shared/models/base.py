@@ -1,4 +1,4 @@
-from decimal import Decimal
+from datetime import date, datetime
 from typing import Any, ClassVar, Dict, List, Optional, Type
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -6,7 +6,18 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from incc_shared.models.helper import is_valid_ulid, utc_now_iso
 
 
-class DynamoBaseModel(BaseModel):
+class DatetimeNormalizedModel(BaseModel):
+    @model_validator(mode="before")
+    def convert_dates(cls, values):
+        for field_name, value in values.items():
+            if isinstance(value, datetime):
+                values[field_name] = value.date().strftime("%Y-%m-%d %H:%M:%S")
+            elif isinstance(value, date):
+                values[field_name] = value.strftime("%Y-%m-%d")
+        return values
+
+
+class DynamoBaseModel(DatetimeNormalizedModel, BaseModel):
     """
     Base model for DynamoDB items.
 

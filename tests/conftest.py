@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timedelta
 from typing import Any
 
 import boto3
@@ -9,8 +10,8 @@ from mypy_boto3_dynamodb.service_resource import Table
 from incc_shared.models.db.customer import CustomerModel
 from incc_shared.models.organization import OrganizationModel
 from incc_shared.models.request.customer.create import CreateCustomerModel
-from incc_shared.storage import to_model
-from incc_shared.storage.customer import create_customer, delete_customer
+from incc_shared.service import to_model
+from incc_shared.service.customer import create_customer, delete_customer
 
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 REGION = "sa-east-1"
@@ -124,6 +125,18 @@ def customer_data2():
             "uf": "SP",
             "cep": "13579000",
         },
+    }
+
+
+@pytest.fixture
+def boleto_data(testCustomer: CustomerModel):
+    today = datetime.today()
+    vencimento = today + timedelta(days=30)
+    return {
+        "valor": 10,
+        "vencimento": vencimento.date(),
+        "emissao": today.date(),
+        "pagador": testCustomer.customerId,
     }
 
 

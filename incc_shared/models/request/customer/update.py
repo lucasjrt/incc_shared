@@ -3,7 +3,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 from incc_shared.models.common import TipoDocumento
-from incc_shared.models.db.customer import Endereco
+from incc_shared.models.db.customer.base import Endereco
 
 
 class UpdateCustomerModel(BaseModel):

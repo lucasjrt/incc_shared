@@ -1,10 +1,9 @@
-from decimal import Decimal
 from typing import ClassVar, Optional
 
 from pydantic import BaseModel, Field
 
 from incc_shared.models.base import DynamoBaseModel
-from incc_shared.models.common import TipoDocumento, TipoJuros
+from incc_shared.models.common import Juros, TipoDocumento
 
 
 class Beneficiario(BaseModel):
@@ -14,11 +13,6 @@ class Beneficiario(BaseModel):
     agenciaDv: str = Field(..., min_length=1, max_length=1)
     convenio: str = Field(..., min_length=6, max_length=7)
     nome: str
-
-
-class Juros(BaseModel):
-    tipo: TipoJuros
-    valor: Decimal
 
 
 class Defaults(BaseModel):

@@ -2,7 +2,6 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from incc_shared.models.base import DynamoBaseModel
 from incc_shared.models.common import TipoDocumento
 
 
@@ -14,7 +13,7 @@ class Endereco(BaseModel):
     cep: str = Field(..., min_length=8, max_length=8)
 
 
-class CustomerModel(DynamoBaseModel):
+class CustomerBase(BaseModel):
     customerId: str
     nome: str
     tipoDocumento: TipoDocumento
@@ -22,5 +21,3 @@ class CustomerModel(DynamoBaseModel):
     endereco: Endereco
     email: Optional[str] = None
     telefone: Optional[str] = None
-
-    ENTITY_TEMPLATE = "CUSTOMER#{customerId}"

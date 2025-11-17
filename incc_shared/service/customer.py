@@ -6,7 +6,7 @@ from incc_shared.exceptions.errors import Conflict, InvalidState, NotFound
 from incc_shared.models.db.customer import CustomerModel
 from incc_shared.models.request.customer.create import CreateCustomerModel
 from incc_shared.models.request.customer.update import UpdateCustomerModel
-from incc_shared.storage import (
+from incc_shared.service import (
     fill_dict,
     patch_dict,
     table,
