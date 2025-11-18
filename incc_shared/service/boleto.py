@@ -1,29 +1,35 @@
 from decimal import Decimal
 
-from boto3.dynamodb.conditions import Attr
-from botocore.exceptions import ClientError
-
-from incc_shared.exceptions.errors import Conflict, InvalidState
+from incc_shared.constants import EntityType
+from incc_shared.exceptions.errors import InvalidState
 from incc_shared.models.common import Juros, TipoJuros
 from incc_shared.models.db.boleto.base import StatusBoleto
 from incc_shared.models.db.boleto.boleto import BoletoModel
 from incc_shared.models.organization import OrganizationModel
 from incc_shared.models.request.boleto.create import CreateBoletoModel
-from incc_shared.service import table, update_dynamo_item
-from incc_shared.service.org import get_org
+from incc_shared.models.request.boleto.update import UpdateBoletoModel
+from incc_shared.models.request.organization.update import UpdateOrganizationModel
+from incc_shared.service import (
+    create_dynamo_item,
+    delete_dynamo_item,
+    get_dynamo_item,
+    get_dynamo_key,
+    to_model,
+    update_dynamo_item,
+)
+from incc_shared.service.org import get_org, update_organization
+
+
+def get_boleto(orgId: str, nossoNumero: int):
+    key = get_dynamo_key(orgId, EntityType.boleto, str(nossoNumero))
+    item = get_dynamo_item(key, BoletoModel)
+    return to_model(item, BoletoModel)
 
 
 def update_nosso_numero(org: OrganizationModel):
-    org.nossoNumero += 1
-    key = {
-        "tenant": f"ORG#{org.orgId}",
-        "entity": f"ORG#{org.orgId}",
-    }
-    item = org.to_item()
-    del item["tenant"]
-    del item["entity"]
-    update_dynamo_item(key, item)
-    return org
+    nossoNumero = org.nossoNumero + 1
+    patch_org = UpdateOrganizationModel(nossoNumero=nossoNumero)
+    update_organization(org.orgId, patch_org)
 
 
 def get_default_juros():
@@ -54,45 +60,31 @@ def create_boleto(orgId: str, boleto: CreateBoletoModel):
             boleto.multa = get_default_multa()
 
     model = boleto.model_dump()
-    model["orgId"] = orgId
-    model["nossoNumero"] = nosso_numero
-    model["status"] = StatusBoleto.emitido
+    item = BoletoModel(
+        orgId=orgId,
+        nossoNumero=nosso_numero,
+        status=[StatusBoleto.emitido],
+        **model,
+    )
 
-    item = BoletoModel.model_validate(model)
-    assert item.tenant is not None, "Tenant id was expected"
-    assert item.entity is not None, "Entity id was expected"
+    # TODO: Criar boleto da caixa aqui e, se der errado, solta uma exceção
 
-    try:
-        table.put_item(
-            Item=item.to_item(),
-            ConditionExpression=Attr(item.tenant).not_exists()
-            & Attr(item.entity).not_exists(),
-        )
-    except ClientError as e:
-        error_code = e.response.get("Error", {}).get("Code")
-        if error_code == "ConditionalCheckFailedException":
-            raise Conflict("Customer already exists")
-        else:
-            error_message = e.response.get("Error", {}).get("Message")
-            print(f"An unexpected error occurred: {error_code} - {error_message}")
-            raise
+    create_dynamo_item(item.to_item())
 
     update_nosso_numero(org)
 
     return nosso_numero
 
 
-def update_boleto():
-    pass
+def update_boleto(orgId: str, nossoNumero: int, boleto: UpdateBoletoModel):
+    key = get_dynamo_key(orgId, EntityType.boleto, str(nossoNumero))
+    update_dynamo_item(key, boleto.model_dump())
 
 
-def delete_boleto():
-    pass
+def delete_boleto(orgId: str, nosso_numero: int):
+    key = get_dynamo_key(orgId, EntityType.boleto, str(nosso_numero))
+    delete_dynamo_item(key)
 
 
-def get_boleto():
-    pass
-
-
-def list_boletos():
+def list_boletos(orgId: str):
     pass

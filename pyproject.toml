@@ -11,7 +11,7 @@ dependencies = [
     "pydantic[email]",
     "cognitojwt[sync]",
     "python-ulid",
-    "cefapi @ git+ssh://git@github.com/lucasjrt/cefapi@main"
+    # "cefapi @ git+ssh://git@github.com/lucasjrt/cefapi@main" # TODO: Add this later
 ]
 
 [tool.setuptools.packages.find]

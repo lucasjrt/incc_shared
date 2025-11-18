@@ -1,6 +1,6 @@
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -24,7 +24,7 @@ class BoletoBase(DatetimeNormalizedModel, BaseModel):
     vencimento: str
     emissao: str
     pagador: str
-    status: StatusBoleto
+    status: List[StatusBoleto]
     # The fields below are only optional so that the request can inherit it, but
     # they're actually required
     juros: Optional[Juros]
