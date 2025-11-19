@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Any, Type, TypeVar
 
 import boto3
-from boto3.dynamodb.conditions import Attr
+from boto3.dynamodb.conditions import Attr, Key
 from botocore.exceptions import ClientError
 from pydantic import BaseModel
 
@@ -158,3 +158,18 @@ def fill_dict(filling: dict, filler: dict):
 
 def delete_dynamo_item(key: dict):
     table.delete_item(Key=key)
+
+
+def list_dynamo_items(orgId: str, entityType: EntityType, model: Type[M]):
+    org_key = f"ORG#{orgId}"
+    entity_key = f"{entityType.value}#"
+    response = table.query(
+        KeyConditionExpression=Key("tenant").eq(org_key)
+        & Key("entity").begins_with(entity_key),
+    )
+
+    if response.get("LastEvaluatedKey"):
+        # TODO: SNS here, as it's not yet supported
+        print("Pagination is expected, user data is now incomplete")
+
+    return [to_model(c, model) for c in response["Items"]]

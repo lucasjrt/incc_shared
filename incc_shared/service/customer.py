@@ -12,8 +12,7 @@ from incc_shared.service import (
     delete_dynamo_item,
     get_dynamo_item,
     get_dynamo_key,
-    table,
-    to_model,
+    list_dynamo_items,
     update_dynamo_item,
 )
 
@@ -24,17 +23,7 @@ def get_customer(orgId: str, customerId: str):
 
 
 def list_customers(orgId: str):
-    org_key = f"ORG#{orgId}"
-    customer_key = "CUSTOMER#"
-    response = table.query(
-        KeyConditionExpression=Key("tenant").eq(org_key)
-        & Key("entity").begins_with(customer_key),
-    )
-
-    if response.get("LastEvaluatedKey"):
-        raise InvalidState("App is not yet prepared to receive more pages")
-
-    return [to_model(c, CustomerModel) for c in response["Items"]]
+    return list_dynamo_items(orgId, EntityType.customer, CustomerModel)
 
 
 def create_customer(orgId: str, customer: CreateCustomerModel):

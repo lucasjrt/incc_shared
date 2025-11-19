@@ -14,7 +14,7 @@ from incc_shared.service import (
     delete_dynamo_item,
     get_dynamo_item,
     get_dynamo_key,
-    to_model,
+    list_dynamo_items,
     update_dynamo_item,
 )
 from incc_shared.service.org import get_org, update_organization
@@ -22,8 +22,7 @@ from incc_shared.service.org import get_org, update_organization
 
 def get_boleto(orgId: str, nossoNumero: int):
     key = get_dynamo_key(orgId, EntityType.boleto, str(nossoNumero))
-    item = get_dynamo_item(key, BoletoModel)
-    return to_model(item, BoletoModel)
+    return get_dynamo_item(key, BoletoModel)
 
 
 def update_nosso_numero(org: OrganizationModel):
@@ -76,8 +75,8 @@ def create_boleto(orgId: str, boleto: CreateBoletoModel):
     return nosso_numero
 
 
-def update_boleto(orgId: str, nossoNumero: int, boleto: UpdateBoletoModel):
-    key = get_dynamo_key(orgId, EntityType.boleto, str(nossoNumero))
+def update_boleto(orgId: str, nosso_numero: int, boleto: UpdateBoletoModel):
+    key = get_dynamo_key(orgId, EntityType.boleto, str(nosso_numero))
     update_dynamo_item(key, boleto.model_dump())
 
 
@@ -87,4 +86,4 @@ def delete_boleto(orgId: str, nosso_numero: int):
 
 
 def list_boletos(orgId: str):
-    pass
+    return list_dynamo_items(orgId, EntityType.boleto, BoletoModel)
