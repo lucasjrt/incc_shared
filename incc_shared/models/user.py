@@ -1,13 +1,13 @@
 from enum import Enum
 from typing import Any, ClassVar, Dict, List, Optional
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import EmailStr, Field, field_validator
 
-from incc_shared.models.base import DynamoBaseModel
+from incc_shared.models.base import DynamoBaseModel, DynamoSerializableModel
 from incc_shared.models.helper import COGNITO_SUB_RE, FEATURE_RE
 
 
-class Feature(BaseModel):
+class Feature(DynamoSerializableModel):
     action: str
     resource: str
     modifier: Optional[str] = None

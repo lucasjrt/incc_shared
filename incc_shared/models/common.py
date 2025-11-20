@@ -1,7 +1,9 @@
 from decimal import Decimal
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from incc_shared.models.base import DynamoSerializableModel
 
 
 class TipoDocumento(str, Enum):
@@ -15,7 +17,7 @@ class TipoJuros(str, Enum):
     isenta = "ISENTO"
 
 
-class Juros(BaseModel):
+class Juros(DynamoSerializableModel):
     tipo: TipoJuros
     valor: Decimal
     prazo: int = Field(

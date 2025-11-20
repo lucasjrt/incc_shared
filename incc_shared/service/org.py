@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from ulid import ULID
 
@@ -13,19 +13,21 @@ from incc_shared.service import (
 )
 
 
-def get_org(orgId: str):
-    key = get_dynamo_key(orgId, EntityType.organization, orgId)
+def get_org(org_id: ULID):
+    key = get_dynamo_key(org_id, EntityType.organization, org_id)
     return get_dynamo_item(key, OrganizationModel)
 
 
-def create_organization():
-    orgId = str(ULID())
-    org_attr: dict[str, Any] = {"orgId": orgId}
+def create_organization(org_id: Optional[ULID] = None):
+    if not org_id:
+        org_id = ULID()
+
+    org_attr: dict[str, Any] = {"orgId": org_id}
     organization = OrganizationModel(**org_attr)
     create_dynamo_item(organization.to_item())
-    return orgId
+    return org_id
 
 
-def update_organization(orgId: str, patch: UpdateOrganizationModel):
-    key = get_dynamo_key(orgId, EntityType.organization, orgId)
+def update_organization(org_id: ULID, patch: UpdateOrganizationModel):
+    key = get_dynamo_key(org_id, EntityType.organization, org_id)
     update_dynamo_item(key, patch.model_dump())

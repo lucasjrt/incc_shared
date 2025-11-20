@@ -1,23 +1,32 @@
-from datetime import date, datetime
-from typing import Any, ClassVar, Dict, List, Optional, Type
+from datetime import datetime
+from typing import Any, ClassVar, Dict, Optional, Type
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+from ulid import ULID
 
-from incc_shared.models.helper import is_valid_ulid, utc_now_iso
-
-
-class DatetimeNormalizedModel(BaseModel):
-    @model_validator(mode="before")
-    def convert_dates(cls, values):
-        for field_name, value in values.items():
-            if isinstance(value, datetime):
-                values[field_name] = value.date().strftime("%Y-%m-%d %H:%M:%S")
-            elif isinstance(value, date):
-                values[field_name] = value.strftime("%Y-%m-%d")
-        return values
+from incc_shared.models.helper import utc_now_iso
 
 
-class DynamoBaseModel(DatetimeNormalizedModel, BaseModel):
+class DynamoSerializableModel(BaseModel):
+    # convert to dict suitable for boto3 put_item (plain python types)
+    def to_item(self, exclude_none: bool = True) -> Dict[str, Any]:
+        d = self.model_dump(mode="json")
+        if exclude_none:
+            d = {k: v for k, v in d.items() if v is not None}
+        return d
+
+    @classmethod
+    def from_item(
+        cls: Type["DynamoSerializableModel"], item: Dict[str, Any]
+    ) -> "DynamoSerializableModel":
+        """
+        Construct model from DynamoDB item (plain dict). Any missing computed
+        keys will be recomputed by the model validator.
+        """
+        return cls(**item)
+
+
+class DynamoBaseModel(DynamoSerializableModel):
     """
     Base model for DynamoDB items.
 
@@ -30,13 +39,15 @@ class DynamoBaseModel(DatetimeNormalizedModel, BaseModel):
     # canonical key fields that commonly exist; subclasses may or may not use them
     tenant: Optional[str] = Field(None, description="PK (e.g. ORG#<id>)")
     entity: Optional[str] = Field(None, description="SK (e.g. USER#<id>)")
-    orgId: str = Field(..., description="The ID this entity belongs to")
+    orgId: ULID = Field(..., description="The ID this entity belongs to")
 
     # created/updated audit
-    createdAt: Optional[str] = Field(None, description="ISO UTC timestamp")
-    createdBy: Optional[str] = Field(None, description="Usuario que criou o recurso")
-    updatedAt: Optional[str] = Field(None, description="ISO UTC timestamp")
-    updatedBy: Optional[str] = Field(
+    createdAt: Optional[datetime] = Field(None, description="ISO UTC timestamp")
+    createdBy: Optional[datetime] = Field(
+        None, description="Usuario que criou o recurso"
+    )
+    updatedAt: Optional[datetime] = Field(None, description="ISO UTC timestamp")
+    updatedBy: Optional[datetime] = Field(
         None, description="Usuario que atualizou o recurso"
     )
 
@@ -109,30 +120,6 @@ class DynamoBaseModel(DatetimeNormalizedModel, BaseModel):
         # createdBy/updatedBy left as-is if provided (no default actor here)
 
         return self
-
-    @field_validator("orgId")
-    @classmethod
-    def validate_orgid(cls, v: str) -> str:
-        if not is_valid_ulid(v) and v != "system":
-            raise ValueError("orgId must look like a ULID (26 chars) or be system")
-        return v
-
-    # convert to dict suitable for boto3 put_item (plain python types)
-    def to_item(self, exclude_none: bool = True) -> Dict[str, Any]:
-        d = self.model_dump()
-        if exclude_none:
-            d = {k: v for k, v in d.items() if v is not None}
-        return d
-
-    @classmethod
-    def from_item(
-        cls: Type["DynamoBaseModel"], item: Dict[str, Any]
-    ) -> "DynamoBaseModel":
-        """
-        Construct model from DynamoDB item (plain dict). Any missing computed
-        keys will be recomputed by the model validator.
-        """
-        return cls(**item)
 
 
 # -------------------------

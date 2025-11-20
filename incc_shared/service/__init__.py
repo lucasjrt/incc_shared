@@ -7,6 +7,7 @@ import boto3
 from boto3.dynamodb.conditions import Attr, Key
 from botocore.exceptions import ClientError
 from pydantic import BaseModel
+from ulid import ULID
 
 from incc_shared.constants import EntityType
 from incc_shared.exceptions.errors import Conflict
@@ -41,9 +42,12 @@ def normalize_item(item: dict) -> dict:
     return {k: _normalize_value(v) for k, v in item.items()}
 
 
-def get_dynamo_key(orgId: str, entityType: EntityType, entityId: str):
+def get_dynamo_key(orgId: ULID, entityType: EntityType, entityId: ULID | str):
+    if isinstance(entityId, ULID):
+        entityId = str(entityId)
+
     return {
-        "tenant": f"ORG#{orgId}",
+        "tenant": f"ORG#{str(orgId)}",
         "entity": f"{entityType.value}#{entityId}",
     }
 
@@ -160,7 +164,7 @@ def delete_dynamo_item(key: dict):
     table.delete_item(Key=key)
 
 
-def list_dynamo_items(orgId: str, entityType: EntityType, model: Type[M]):
+def list_dynamo_items(orgId: ULID, entityType: EntityType, model: Type[M]):
     org_key = f"ORG#{orgId}"
     entity_key = f"{entityType.value}#"
     response = table.query(

@@ -1,11 +1,12 @@
 from typing import List
 
-from pydantic import BaseModel, ValidationError, field_validator
+from pydantic import ValidationError, field_validator
 
+from incc_shared.models.base import DynamoSerializableModel
 from incc_shared.models.user import Role
 
 
-class EmailIndexUserModel(BaseModel):
+class EmailIndexUserModel(DynamoSerializableModel):
     tenant: str
     entity: str
     roles: List[Role] = [Role.USER]

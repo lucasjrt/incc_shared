@@ -1,10 +1,11 @@
-from decimal import Decimal
+from datetime import date
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel
+from ulid import ULID
 
-from incc_shared.models.base import DatetimeNormalizedModel
+from incc_shared.models import ConstrainedMoney
+from incc_shared.models.base import DynamoSerializableModel
 from incc_shared.models.common import Juros
 
 
@@ -18,12 +19,12 @@ class StatusBoleto(str, Enum):
     pago = "PAGO"
 
 
-class BoletoBase(DatetimeNormalizedModel, BaseModel):
+class BoletoBase(DynamoSerializableModel):
     nossoNumero: int
-    valor: Decimal
-    vencimento: str
-    emissao: str
-    pagador: str
+    valor: ConstrainedMoney
+    vencimento: date
+    emissao: date
+    pagador: ULID
     status: List[StatusBoleto]
     # The fields below are only optional so that the request can inherit it, but
     # they're actually required

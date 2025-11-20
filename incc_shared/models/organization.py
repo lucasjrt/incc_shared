@@ -1,12 +1,12 @@
 from typing import ClassVar, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from incc_shared.models.base import DynamoBaseModel
+from incc_shared.models.base import DynamoBaseModel, DynamoSerializableModel
 from incc_shared.models.common import Juros, TipoDocumento
 
 
-class Beneficiario(BaseModel):
+class Beneficiario(DynamoSerializableModel):
     tipoDocumento: TipoDocumento
     documento: str = Field(..., min_length=11, max_length=14)
     agencia: str = Field(..., min_length=4, max_length=4)
@@ -15,7 +15,7 @@ class Beneficiario(BaseModel):
     nome: str
 
 
-class Defaults(BaseModel):
+class Defaults(DynamoSerializableModel):
     multa: Juros
     juros: Juros
     comQrcode: bool = False

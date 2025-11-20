@@ -1,11 +1,13 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+from ulid import ULID
 
+from incc_shared.models.base import DynamoSerializableModel
 from incc_shared.models.common import TipoDocumento
 
 
-class Endereco(BaseModel):
+class Endereco(DynamoSerializableModel):
     logradouro: str
     bairro: str
     cidade: str
@@ -13,8 +15,8 @@ class Endereco(BaseModel):
     cep: str = Field(..., min_length=8, max_length=8)
 
 
-class CustomerBase(BaseModel):
-    customerId: str
+class CustomerBase(DynamoSerializableModel):
+    customerId: ULID
     nome: str
     tipoDocumento: TipoDocumento
     documento: str

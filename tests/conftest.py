@@ -1,21 +1,24 @@
 import os
-from datetime import datetime, timedelta
-from typing import Any
+from datetime import date, timedelta
 
 import boto3
 import pytest
 from moto import mock_aws
 from mypy_boto3_dynamodb.service_resource import Table
+from ulid import ULID
 
+from incc_shared.constants import EntityType
 from incc_shared.models.db.customer import CustomerModel
-from incc_shared.models.organization import OrganizationModel
 from incc_shared.models.request.customer.create import CreateCustomerModel
-from incc_shared.service import to_model
-from incc_shared.service.customer import create_customer, delete_customer
+from incc_shared.models.request.schedule.create import CreateScheduleModel
+from incc_shared.service import get_dynamo_key
+from incc_shared.service.customer import create_customer, delete_customer, get_customer
+from incc_shared.service.org import create_organization
+from incc_shared.service.schedule import create_schedule, delete_schedule, get_schedule
 
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 REGION = "sa-east-1"
-TEST_TENANT = "01KA13K7YAHB6R1ECCS8FQDDZJ"
+TEST_TENANT = ULID()
 
 
 @pytest.fixture(scope="session")
@@ -87,13 +90,12 @@ def clean_table_between_tests(table: Table):
 
 
 @pytest.fixture
-def testOrgId(table):
-    orgId = TEST_TENANT
-    org_attr: dict[str, Any] = {"orgId": orgId}
-    organization = OrganizationModel(**org_attr)
-    table.put_item(Item=organization.to_item())
-    yield orgId
-    table.delete_item(Key={"tenant": f"ORG#{orgId}", "entity": f"ORG#{orgId}"})
+def test_org_id(table):
+    org_id = TEST_TENANT
+    create_organization(org_id)
+    yield org_id
+    key = get_dynamo_key(org_id, EntityType.organization, org_id)
+    table.delete_item(Key=key)
 
 
 @pytest.fixture
@@ -129,37 +131,70 @@ def customer_data2():
 
 
 @pytest.fixture
-def boleto_data(testCustomer: CustomerModel):
-    today = datetime.today()
+def boleto_data(test_customer: CustomerModel):
+    today = date.today()
     vencimento = today + timedelta(days=30)
     return {
         "valor": 10,
-        "vencimento": vencimento.date(),
-        "emissao": today.date(),
-        "pagador": testCustomer.customerId,
+        "vencimento": vencimento,
+        "emissao": today,
+        "pagador": test_customer.customerId,
     }
 
 
 @pytest.fixture
-def testCustomer(table: Table, testOrgId: str, customer_data):
-    customerId = create_customer(testOrgId, CreateCustomerModel(**customer_data))
-    result = table.get_item(
-        Key={"tenant": f"ORG#{testOrgId}", "entity": f"CUSTOMER#{customerId}"}
-    )
-    item = result.get("Item")
-    assert item
-    retrieved = to_model(item, CustomerModel)
-    return retrieved
+def schedule_data(test_customer: CustomerModel):
+    today = date.today()
+    vencimento = today + timedelta(days=30)
+    dataInicio = today + timedelta(days=7)
+    return {
+        "valorBase": 10,
+        "pagador": test_customer.customerId,
+        "vencimento": vencimento,
+        "parcelas": 36,
+        "dataInicio": dataInicio,
+    }
 
 
 @pytest.fixture
-def testCustomer2(table: Table, testOrgId: str, customer_data):
-    customerId = create_customer(testOrgId, CreateCustomerModel(**customer_data))
-    result = table.get_item(
-        Key={"tenant": f"ORG#{testOrgId}", "entity": f"CUSTOMER#{customerId}"}
+def schedule_balao_data(schedule_data: dict):
+    balao_data = schedule_data.copy()
+    balao_data["intervaloParcelas"] = 6
+    balao_data["parcelas"] = 3
+    return balao_data
+
+
+@pytest.fixture
+def test_customer(test_org_id: ULID, customer_data):
+    customer_id = create_customer(test_org_id, CreateCustomerModel(**customer_data))
+    customer = get_customer(test_org_id, customer_id)
+    assert customer
+    return customer
+
+
+@pytest.fixture
+def test_customer_2(test_org_id: ULID, customer_data):
+    customer_id = create_customer(test_org_id, CreateCustomerModel(**customer_data))
+    customer = get_customer(test_org_id, customer_id)
+    assert customer
+    yield customer
+    delete_customer(test_org_id, customer.customerId)
+
+
+@pytest.fixture
+def test_schedule(test_org_id: ULID, schedule_data):
+    schedule_id = create_schedule(test_org_id, CreateScheduleModel(**schedule_data))
+    schedule = get_schedule(test_org_id, schedule_id)
+    assert schedule
+    return schedule
+
+
+@pytest.fixture
+def test_schedule_balao(test_org_id: ULID, schedule_balao_data: dict):
+    schedule_id = create_schedule(
+        test_org_id, CreateScheduleModel(**schedule_balao_data)
     )
-    item = result.get("Item")
-    assert item
-    retrieved = to_model(item, CustomerModel)
-    yield retrieved
-    delete_customer(testOrgId, retrieved.customerId)
+    schedule = get_schedule(test_org_id, schedule_id)
+    assert schedule
+    yield schedule
+    delete_schedule(test_org_id, schedule.id)
