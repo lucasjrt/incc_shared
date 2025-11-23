@@ -1,9 +1,9 @@
 from datetime import date
 
+from incc_shared.admin.service.schedule import list_schedules_for_date
 from incc_shared.exceptions.errors import InvalidState
 from incc_shared.models.db.indexes.schedule import ScheduleIndexModel
 from incc_shared.models.db.schedule.base import ScheduleStatus
-from incc_shared.service.schedule import list_schedules_for_date
 from incc_shared.service.utils import format_date
 
 today = format_date(date.today())
@@ -38,8 +38,8 @@ def validate_schedule(schedule: ScheduleIndexModel):
 
 
 def run_schedule(schedule: ScheduleIndexModel):
-    validate_schedule(schedule)
     # 1. validate consistency of fields
+    validate_schedule(schedule)
     # 2. In an idempotent way, create a boleto
     # 3. Update schedule data
     return

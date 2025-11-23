@@ -3,11 +3,9 @@ from incc_shared.exceptions.errors import InvalidState
 from incc_shared.models.common import get_default_juros, get_default_multa
 from incc_shared.models.db.boleto.base import StatusBoleto
 from incc_shared.models.db.boleto.boleto import BoletoModel
-from incc_shared.models.db.organization import OrganizationModel
 from incc_shared.models.request.boleto.create import CreateBoletoModel
 from incc_shared.models.request.boleto.update import UpdateBoletoModel
-from incc_shared.models.request.organization.update import UpdateOrganizationModel
-from incc_shared.service.organization import get_org, update_organization
+from incc_shared.service.organization import get_org, update_nosso_numero
 from incc_shared.service.storage.dynamodb import (
     create_dynamo_item,
     delete_dynamo_item,
@@ -21,12 +19,6 @@ from incc_shared.service.storage.dynamodb import (
 def get_boleto(nosso_numero: int):
     key = get_dynamo_key(EntityType.boleto, str(nosso_numero))
     return get_dynamo_item(key, BoletoModel)
-
-
-def update_nosso_numero(org: OrganizationModel):
-    nossoNumero = org.nossoNumero + 1
-    patch_org = UpdateOrganizationModel(nossoNumero=nossoNumero)
-    update_organization(patch_org)
 
 
 def create_boleto(boleto: CreateBoletoModel):

@@ -9,10 +9,10 @@ from ulid import ULID
 
 from incc_shared.admin.service.organization import create_organization
 from incc_shared.auth.constants import get_cognito_pool_id
-from incc_shared.auth.context import set_context_entity
+from incc_shared.auth.context import impersonate, set_context_entity
 from incc_shared.models.db.customer import CustomerModel
 from incc_shared.models.db.user.user import UserModel
-from incc_shared.models.feature import Feature, Resource
+from incc_shared.models.feature import Feature, Resource, Scope
 from incc_shared.models.request.customer.create import CreateCustomerModel
 from incc_shared.models.request.schedule.create import CreateScheduleModel
 from incc_shared.service.customer import create_customer, delete_customer, get_customer
@@ -128,7 +128,7 @@ def table():
             "orgId": TEST_TENANT,
             "features": [
                 Feature.read(Resource.org),
-                Feature.write(Resource.org),
+                Feature.write(Resource.org, Scope.all),
             ],
         }
 

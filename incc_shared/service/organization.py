@@ -56,3 +56,9 @@ def update_organization(patch: UpdateOrganizationModel):
         ):
             raise InvalidState("Org must be setup first before update")
         raise
+
+
+def update_nosso_numero(org: OrganizationModel):
+    nossoNumero = org.nossoNumero + 1
+    patch_org = UpdateOrganizationModel(nossoNumero=nossoNumero)
+    update_organization(patch_org)
