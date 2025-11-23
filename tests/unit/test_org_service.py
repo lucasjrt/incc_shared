@@ -1,12 +1,11 @@
 import pytest
 
-from incc_shared.constants import EntityType
 from incc_shared.exceptions.errors import InvalidState
 from incc_shared.models.common import TipoDocumento
 from incc_shared.models.db.organization.base import Beneficiario
 from incc_shared.models.request.organization.org_setup import SetupOrgModel
 from incc_shared.models.request.organization.update import UpdateOrganizationModel
-from incc_shared.service import get_dynamo_key, to_model
+from incc_shared.service import to_model
 from incc_shared.service.org import (
     create_organization,
     get_org,

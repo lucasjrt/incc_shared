@@ -18,9 +18,9 @@ from incc_shared.service import (
     create_dynamo_item,
     delete_dynamo_item,
     get_dyanmo_index_item,
+    get_dynamo_item,
     get_dynamo_key,
-    table,
-    to_model,
+    list_dynamo_entity,
 )
 from incc_shared.service.org import get_org
 
@@ -95,17 +95,13 @@ def create_user(org_id: ULID, model: CreateUserModel):
     return user_id
 
 
-def get_user(orgId: str, username: str):
-    tenant_key = f"ORG#{orgId}"
-    user_key = f"USER#{username}"
+def list_users(org_id: ULID):
+    return list_dynamo_entity(org_id, EntityType.user, UserModel)
 
-    response = table.get_item(Key={"tenant": tenant_key, "entity": user_key})
 
-    user = response.get("Item")
-    if not user:
-        return None
-
-    return to_model(user, UserModel)
+def get_user(org_id: ULID, username: str):
+    key = get_dynamo_key(org_id, EntityType.user, username)
+    return get_dynamo_item(key, UserModel)
 
 
 def get_user_by_username(username: str):
