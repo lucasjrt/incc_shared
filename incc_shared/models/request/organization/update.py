@@ -2,7 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from incc_shared.models.organization import Defaults
+from incc_shared.models.db.organization import Defaults
 
 
 class UpdateBeneficiarioModel(BaseModel):

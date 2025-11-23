@@ -1,6 +1,7 @@
 from ulid import ULID
 
 from incc_shared.models.db.schedule import ScheduleModel
+from incc_shared.models.db.schedule.base import ScheduleStatus
 from incc_shared.models.request.schedule.update import UpdateScheduleModel
 from incc_shared.service import to_model
 from incc_shared.service.schedule import (
@@ -34,7 +35,7 @@ def test_customer_lifecycle(
 
     update_fields = {
         "valorBase": 15,
-        "ativo": False,
+        "status": ScheduleStatus.cancelado.value,
     }
     update_model = to_model(update_fields, UpdateScheduleModel)
 
@@ -42,7 +43,7 @@ def test_customer_lifecycle(
     updated_schedule = get_schedule(test_org_id, test_schedule.id)
     assert updated_schedule
     assert updated_schedule.valorBase == update_model.valorBase
-    assert updated_schedule.ativo == update_model.ativo
+    assert updated_schedule.status == update_model.status
 
     delete_schedule(test_org_id, test_schedule.id)
     assert get_schedule(test_org_id, test_schedule.id) is None

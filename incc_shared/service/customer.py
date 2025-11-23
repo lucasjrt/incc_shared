@@ -9,7 +9,7 @@ from incc_shared.service import (
     delete_dynamo_item,
     get_dynamo_item,
     get_dynamo_key,
-    list_dynamo_items,
+    list_dynamo_entity,
     update_dynamo_item,
 )
 
@@ -20,7 +20,7 @@ def get_customer(orgId: ULID, customerId: ULID):
 
 
 def list_customers(orgId: ULID):
-    return list_dynamo_items(orgId, EntityType.customer, CustomerModel)
+    return list_dynamo_entity(orgId, EntityType.customer, CustomerModel)
 
 
 def create_customer(orgId: ULID, customer: CreateCustomerModel):

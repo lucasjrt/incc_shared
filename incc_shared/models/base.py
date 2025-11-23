@@ -4,8 +4,6 @@ from typing import Any, ClassVar, Dict, Optional, Type
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from ulid import ULID
 
-from incc_shared.models.helper import utc_now_iso
-
 
 class DynamoSerializableModel(BaseModel):
     # convert to dict suitable for boto3 put_item (plain python types)
@@ -43,12 +41,10 @@ class DynamoBaseModel(DynamoSerializableModel):
 
     # created/updated audit
     createdAt: Optional[datetime] = Field(None, description="ISO UTC timestamp")
-    createdBy: Optional[datetime] = Field(
-        None, description="Usuario que criou o recurso"
-    )
+    createdBy: Optional[str] = Field(None, description="Entidade que criou o recurso")
     updatedAt: Optional[datetime] = Field(None, description="ISO UTC timestamp")
-    updatedBy: Optional[datetime] = Field(
-        None, description="Usuario que atualizou o recurso"
+    updatedBy: Optional[str] = Field(
+        None, description="Entidade que atualizou o recurso"
     )
 
     model_config = ConfigDict(populate_by_name=True)
@@ -83,7 +79,7 @@ class DynamoBaseModel(DynamoSerializableModel):
         """
         return {}
 
-    # model-level validator runs after field validators (Pydantic v2)
+    # model-level validator runs after field validators
     @model_validator(mode="after")
     def canonicalize_keys(self) -> "DynamoBaseModel":
         """
@@ -91,17 +87,13 @@ class DynamoBaseModel(DynamoSerializableModel):
         and compute_additional_gsis. Does NOT raise for mismatches by default -
         it prefers authoritative computed values.
         """
-        values = self.model_dump()  # plain dict
+        values = self.model_dump()
 
         # Compute tenant/entity if template provided
         computed_pk = self.__class__.compute_pk(values)
         computed_sk = self.__class__.compute_sk(values)
-
-        # set authoritative values
-        if computed_pk is not None:
-            object.__setattr__(self, "tenant", computed_pk)
-        if computed_sk is not None:
-            object.__setattr__(self, "entity", computed_sk)
+        self.tenant = computed_pk
+        self.entity = computed_sk
 
         # compute GSIs and set them on instance
         computed_gsis = self.__class__.compute_additional_gsis(values) or {}
@@ -111,55 +103,4 @@ class DynamoBaseModel(DynamoSerializableModel):
             # so that to_item() will include it).
             object.__setattr__(self, gsi_field, gsi_value)
 
-        # Ensure createdAt/updatedAt exist sensibly:
-        now = utc_now_iso()
-        if getattr(self, "createdAt", None) is None:
-            object.__setattr__(self, "createdAt", now)
-        # For update: always set updatedAt to now (model creation counts as update)
-        object.__setattr__(self, "updatedAt", now)
-        # createdBy/updatedBy left as-is if provided (no default actor here)
-
         return self
-
-
-# -------------------------
-# Usage examples
-# -------------------------
-# if __name__ == "__main__":
-#     # Example creating a user
-#     try:
-#         raw = {
-#             "userId": "abc-123-def",
-#             "orgId": "01FZ6Y3G0Z6Y3QWXYZABCD1234",  # 26-char ULID-ish
-#             "email": "Alice@example.com",
-#             "features": ["read:document", "write:document:own"],
-#             "roles": ["ADMIN"],
-#             "createdBy": "system-import",  # optional actor
-#         }
-#
-#         user = UserModel(**raw)
-#         print("User model:", user)
-#         print("DynamoDB Item ready to put:", user.to_item())
-#
-#         # Example constructing from DynamoDB item
-#         fetched_item = {
-#             "tenant": "ORG#01FZ6Y3G0Z6Y3QWXYZABCD1234",
-#             "entity": "USER#abc-123-def",
-#             "userId": "abc-123-def",
-#             "orgId": "01FZ6Y3G0Z6Y3QWXYZABCD1234",
-#             "email": "alice@example.com",
-#             "features": ["read:document"],
-#             "gsi_email_pk": "EMAIL#alice@example.com",
-#             "createdAt": "2024-01-01T00:00:00Z",
-#         }
-#         user2 = UserModel.from_item(fetched_item)
-#         print("User2 rebuilt:", user2.to_item())
-#
-#         # Org example
-#         org = OrgModel(
-#             orgId="01FZ6Y3G0Z6Y3QWXYZABCD1234", name="MyOrg", createdBy="admin"
-#         )
-#         print("Org item:", org.to_item())
-#
-#     except ValidationError as e:
-#         print("Validation error:", e)

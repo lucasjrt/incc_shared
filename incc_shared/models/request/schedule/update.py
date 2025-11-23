@@ -5,10 +5,11 @@ from typing import Optional
 from ulid import ULID
 
 from incc_shared.models.base import DynamoSerializableModel
+from incc_shared.models.db.schedule.base import ScheduleStatus
 
 
 class UpdateScheduleModel(DynamoSerializableModel):
-    ativo: Optional[bool] = None
+    status: Optional[ScheduleStatus] = None
     valorBase: Optional[Decimal] = None
     pagador: Optional[ULID] = None
     vencimento: Optional[date] = None

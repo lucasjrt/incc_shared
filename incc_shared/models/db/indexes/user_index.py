@@ -1,16 +1,16 @@
 from functools import cached_property
 from typing import List
 
-from pydantic import BaseModel, ValidationError, computed_field
+from pydantic import ValidationError, computed_field
 
-from incc_shared.models.user import Role
+from incc_shared.models.db.user.base import Role
+from incc_shared.models.feature import Feature, PermissionedEntity
 
 
-class UserIndexUserModel(BaseModel):
+class UserIndexModel(PermissionedEntity):
     tenant: str
     entity: str
-    roles: List[Role] = [Role.USER]
-    features: List[str] = []
+    roles: List[Role] = [Role.user]
 
     gsi_user_pk: str
     gsi_org_sk: str

@@ -1,6 +1,5 @@
-from datetime import date, datetime
+from datetime import date
 from enum import Enum
-from typing import Optional
 
 from pydantic import Field, model_validator
 from ulid import ULID
@@ -9,9 +8,12 @@ from incc_shared.models import ConstrainedMoney
 from incc_shared.models.base import DynamoSerializableModel
 
 
-class ScheduleType(str, Enum):
-    parcela = "PARCELA"
-    balao = "BALAO"
+class ScheduleStatus(str, Enum):
+    ativo = "ATIVO"
+    concluido = "CONCLUIDO"
+    cancelado = "CANCELADO"
+    erro = "ERRO"
+    pausado = "PAUSADO"
 
 
 class ScheduleBase(DynamoSerializableModel):
@@ -28,15 +30,18 @@ class ScheduleBase(DynamoSerializableModel):
         le=420,
         description="Número total de boletos que serão gerados",
     )
+    intervaloParcelas: int = Field(
+        1, ge=1, description="Intervalo entre parcelas. Útil em balões"
+    )
+    status: ScheduleStatus = ScheduleStatus.ativo
+    parcelasEmitidas: int = 0
+    proximaExecucao: date = Field(
+        ..., description="Indice usado pelo executor para listar os agendamentos do dia"
+    )
     dataInicio: date = Field(
         default_factory=date.today,
         description="Data em que o primeiro boleto será emitido. Os seguintes serão computados com base neste",
     )
-    intervaloParcelas: int = Field(
-        1, ge=1, description="Intervalo entre parcelas. Útil em balões"
-    )
-    ativo: bool = True
-    ultimaExecucao: Optional[datetime] = None
 
     @model_validator(mode="after")
     def valida_datas(self) -> "ScheduleBase":

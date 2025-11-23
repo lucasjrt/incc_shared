@@ -7,7 +7,7 @@ from incc_shared.exceptions.errors import InvalidState
 from incc_shared.models.common import Juros, TipoJuros
 from incc_shared.models.db.boleto.base import StatusBoleto
 from incc_shared.models.db.boleto.boleto import BoletoModel
-from incc_shared.models.organization import OrganizationModel
+from incc_shared.models.db.organization import OrganizationModel
 from incc_shared.models.request.boleto.create import CreateBoletoModel
 from incc_shared.models.request.boleto.update import UpdateBoletoModel
 from incc_shared.models.request.organization.update import UpdateOrganizationModel
@@ -16,14 +16,14 @@ from incc_shared.service import (
     delete_dynamo_item,
     get_dynamo_item,
     get_dynamo_key,
-    list_dynamo_items,
+    list_dynamo_entity,
     update_dynamo_item,
 )
 from incc_shared.service.org import get_org, update_organization
 
 
-def get_boleto(orgId: ULID, nossoNumero: int):
-    key = get_dynamo_key(orgId, EntityType.boleto, str(nossoNumero))
+def get_boleto(org_id: ULID, nosso_numero: int):
+    key = get_dynamo_key(org_id, EntityType.boleto, str(nosso_numero))
     return get_dynamo_item(key, BoletoModel)
 
 
@@ -41,8 +41,8 @@ def get_default_multa():
     return Juros(tipo=TipoJuros.taxa, valor=Decimal(2), prazo=0)
 
 
-def create_boleto(orgId: ULID, boleto: CreateBoletoModel):
-    org = get_org(orgId)
+def create_boleto(org_id: ULID, boleto: CreateBoletoModel):
+    org = get_org(org_id)
     if not org:
         raise InvalidState("Org does not exist")
 
@@ -62,7 +62,7 @@ def create_boleto(orgId: ULID, boleto: CreateBoletoModel):
 
     model = boleto.to_item()
     item = BoletoModel(
-        orgId=orgId,
+        orgId=org_id,
         nossoNumero=nosso_numero,
         status=[StatusBoleto.emitido],
         **model,
@@ -77,15 +77,15 @@ def create_boleto(orgId: ULID, boleto: CreateBoletoModel):
     return nosso_numero
 
 
-def update_boleto(orgId: ULID, nosso_numero: int, boleto: UpdateBoletoModel):
-    key = get_dynamo_key(orgId, EntityType.boleto, str(nosso_numero))
+def update_boleto(org_id: ULID, nosso_numero: int, boleto: UpdateBoletoModel):
+    key = get_dynamo_key(org_id, EntityType.boleto, str(nosso_numero))
     update_dynamo_item(key, boleto.to_item())
 
 
-def delete_boleto(orgId: ULID, nosso_numero: int):
-    key = get_dynamo_key(orgId, EntityType.boleto, str(nosso_numero))
+def delete_boleto(org_id: ULID, nosso_numero: int):
+    key = get_dynamo_key(org_id, EntityType.boleto, str(nosso_numero))
     delete_dynamo_item(key)
 
 
-def list_boletos(orgId: ULID):
-    return list_dynamo_items(orgId, EntityType.boleto, BoletoModel)
+def list_boletos(org_id: ULID):
+    return list_dynamo_entity(org_id, EntityType.boleto, BoletoModel)

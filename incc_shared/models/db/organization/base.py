@@ -1,8 +1,8 @@
-from typing import ClassVar, Optional
+from typing import Optional
 
 from pydantic import Field
 
-from incc_shared.models.base import DynamoBaseModel, DynamoSerializableModel
+from incc_shared.models.base import DynamoSerializableModel
 from incc_shared.models.common import Juros, TipoDocumento
 
 
@@ -21,7 +21,7 @@ class Defaults(DynamoSerializableModel):
     comQrcode: bool = False
 
 
-class OrganizationModel(DynamoBaseModel):
+class OrganizationBase(DynamoSerializableModel):
     nossoNumero: int = Field(
         1, description="Gerencia o contador do nosso número para os boletos"
     )
@@ -31,5 +31,3 @@ class OrganizationModel(DynamoBaseModel):
     defaults: Optional[Defaults] = Field(
         None, description="Configurações padrões para a organização"
     )
-
-    ENTITY_TEMPLATE: ClassVar[Optional[str]] = "ORG#{orgId}"

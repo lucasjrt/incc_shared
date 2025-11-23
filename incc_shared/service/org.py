@@ -3,7 +3,7 @@ from typing import Any, Optional
 from ulid import ULID
 
 from incc_shared.constants import EntityType
-from incc_shared.models.organization import OrganizationModel
+from incc_shared.models.db.organization import OrganizationModel
 from incc_shared.models.request.organization.update import UpdateOrganizationModel
 from incc_shared.service import (
     create_dynamo_item,

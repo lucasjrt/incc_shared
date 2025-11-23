@@ -1,16 +1,18 @@
 import base64
 import os
 from decimal import Decimal
-from typing import Any, Type, TypeVar
+from typing import Any, Optional, Type, TypeVar
 
 import boto3
-from boto3.dynamodb.conditions import Attr, Key
+from boto3.dynamodb.conditions import Attr, ConditionBase, Key
 from botocore.exceptions import ClientError
 from pydantic import BaseModel
 from ulid import ULID
 
+from incc_shared.auth.context import get_context_entity
 from incc_shared.constants import EntityType
-from incc_shared.exceptions.errors import Conflict
+from incc_shared.exceptions.errors import Conflict, InvalidState
+from incc_shared.models.helper import utc_now_iso
 
 M = TypeVar("M", bound=BaseModel)
 
@@ -64,6 +66,21 @@ def get_dynamo_item(dynamo_key: dict, model: Type[M]):
     return None
 
 
+def get_dyanmo_index_item(index_name: str, condition: ConditionBase, model: Type[M]):
+    response = table.query(IndexName=index_name, KeyConditionExpression=condition)
+
+    items = response.get("Items", [])
+    if len(items) > 1:
+        raise InvalidState(
+            f"{len(items)} items was found in index {index_name} for the given key"
+        )
+
+    if items:
+        return to_model(items[0], model)
+
+    return None
+
+
 def _flatten_updates(
     prefix: tuple[str, ...],
     obj: Any,
@@ -84,12 +101,18 @@ def _flatten_updates(
         out[prefix] = obj
 
 
-def update_dynamo_item(key: dict, updates: dict):
-    updates.pop("tenant", None)
-    updates.pop("entity", None)
+def update_dynamo_item(key: dict, update: dict):
+    update.pop("tenant", None)
+    update.pop("entity", None)
+    update["updatedAt"] = utc_now_iso()
+
+    context_user = get_context_entity()
+    if not context_user:
+        raise InvalidState("No user is set to context during item update")
+    update["updatedBy"] = context_user.entity
 
     flat: dict[tuple[str, ...], Any] = {}
-    for k, v in updates.items():
+    for k, v in update.items():
         _flatten_updates((k,), v, flat)
 
     set_clauses = []
@@ -129,6 +152,13 @@ def create_dynamo_item(item: dict):
     if not entity:
         raise ValueError("Item must have an entity")
 
+    item["createdAt"] = utc_now_iso()
+
+    context_user = get_context_entity()
+    if not context_user:
+        raise InvalidState("No user is set to context during item create")
+    item["createdBy"] = context_user.entity
+
     try:
         table.put_item(
             Item=item,
@@ -164,13 +194,24 @@ def delete_dynamo_item(key: dict):
     table.delete_item(Key=key)
 
 
-def list_dynamo_items(orgId: ULID, entityType: EntityType, model: Type[M]):
-    org_key = f"ORG#{orgId}"
-    entity_key = f"{entityType.value}#"
-    response = table.query(
-        KeyConditionExpression=Key("tenant").eq(org_key)
-        & Key("entity").begins_with(entity_key),
-    )
+def list_dynamo_entity(org_id: ULID, entity_type: EntityType, model: Type[M]):
+    org_key = f"ORG#{org_id}"
+    entity_key = f"{entity_type.value}#"
+    condition = Key("tenant").eq(org_key) & Key("entity").begins_with(entity_key)
+
+    return list_dynamo_items(condition, model)
+
+
+def list_dynamo_items(
+    condition: ConditionBase, model: Type[M], index_name: Optional[str] = None
+):
+    kwargs: dict[str, Any] = {
+        "KeyConditionExpression": condition,
+    }
+    if index_name:
+        kwargs["IndexName"] = index_name
+
+    response = table.query(**kwargs)
 
     if response.get("LastEvaluatedKey"):
         # TODO: SNS here, as it's not yet supported
