@@ -11,7 +11,6 @@ class EmailIndexModel(PermissionedEntity):
     tenant: str
     entity: str
     roles: List[Role] = [Role.user]
-    orgId: str = ""
 
     gsi_email_pk: str
     gsi_org_sk: str

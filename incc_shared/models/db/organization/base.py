@@ -1,6 +1,7 @@
 from typing import Optional
 
 from pydantic import Field
+from ulid import ULID
 
 from incc_shared.models.base import DynamoSerializableModel
 from incc_shared.models.common import Juros, TipoDocumento
@@ -22,6 +23,7 @@ class Defaults(DynamoSerializableModel):
 
 
 class OrganizationBase(DynamoSerializableModel):
+    orgId: ULID
     nossoNumero: int = Field(
         1, description="Gerencia o contador do nosso número para os boletos"
     )

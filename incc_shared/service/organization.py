@@ -1,8 +1,6 @@
-from typing import Any, Optional
-
 from botocore.exceptions import ClientError
-from ulid import ULID
 
+from incc_shared.auth.context import get_context_entity
 from incc_shared.constants import EntityType
 from incc_shared.exceptions.errors import InvalidState
 from incc_shared.models.common import get_default_juros, get_default_multa
@@ -10,8 +8,7 @@ from incc_shared.models.db.organization import OrganizationModel
 from incc_shared.models.db.organization.base import Defaults
 from incc_shared.models.request.organization.org_setup import SetupOrgModel
 from incc_shared.models.request.organization.update import UpdateOrganizationModel
-from incc_shared.service import (
-    create_dynamo_item,
+from incc_shared.service.storage.dynamodb import (
     get_dynamo_item,
     get_dynamo_key,
     set_dynamo_item,
@@ -19,23 +16,14 @@ from incc_shared.service import (
 )
 
 
-def get_org(org_id: ULID):
-    key = get_dynamo_key(org_id, EntityType.organization, org_id)
+def get_org():
+    user = get_context_entity()
+    key = get_dynamo_key(EntityType.organization, user.orgId)
     return get_dynamo_item(key, OrganizationModel)
 
 
-def create_organization(org_id: Optional[ULID] = None):
-    if not org_id:
-        org_id = ULID()
-
-    org_attr: dict[str, Any] = {"orgId": org_id}
-    organization = OrganizationModel(**org_attr)
-    create_dynamo_item(organization.to_item())
-    return org_id
-
-
-def setup_organization(org_id: ULID, model: SetupOrgModel):
-    org = get_org(org_id)
+def setup_organization(model: SetupOrgModel):
+    org = get_org()
     if not org:
         raise InvalidState("Attempt to updated org that does not exist")
 
@@ -53,8 +41,9 @@ def setup_organization(org_id: ULID, model: SetupOrgModel):
     set_dynamo_item(org.to_item())
 
 
-def update_organization(org_id: ULID, patch: UpdateOrganizationModel):
-    key = get_dynamo_key(org_id, EntityType.organization, org_id)
+def update_organization(patch: UpdateOrganizationModel):
+    user = get_context_entity()
+    key = get_dynamo_key(EntityType.organization, user.orgId)
     try:
         update_dynamo_item(key, patch.to_item())
     except ClientError as e:

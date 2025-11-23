@@ -1,19 +1,16 @@
-from ulid import ULID
-
 from incc_shared.models.db.schedule import ScheduleModel
 from incc_shared.models.db.schedule.base import ScheduleStatus
 from incc_shared.models.request.schedule.update import UpdateScheduleModel
-from incc_shared.service import to_model
 from incc_shared.service.schedule import (
     delete_schedule,
     get_schedule,
     list_schedules,
     update_schedule,
 )
+from incc_shared.service.storage.base import to_model
 
 
-def test_customer_lifecycle(
-    test_org_id: ULID,
+def test_schedule_lifecycle(
     test_schedule: ScheduleModel,
     test_schedule_balao: ScheduleModel,
     schedule_data: dict,
@@ -24,10 +21,10 @@ def test_customer_lifecycle(
     assert test_schedule.parcelas == schedule_data["parcelas"]
     assert test_schedule.dataInicio == schedule_data["dataInicio"]
 
-    schedule = get_schedule(test_org_id, test_schedule.id)
+    schedule = get_schedule(test_schedule.id)
     assert schedule is not None
 
-    schedules = list_schedules(test_org_id)
+    schedules = list_schedules()
     assert len(schedules) == 2
     ids = [test_schedule.id, test_schedule_balao.id]
     for s in schedules:
@@ -39,11 +36,11 @@ def test_customer_lifecycle(
     }
     update_model = to_model(update_fields, UpdateScheduleModel)
 
-    update_schedule(test_org_id, test_schedule.id, update_model)
-    updated_schedule = get_schedule(test_org_id, test_schedule.id)
+    update_schedule(test_schedule.id, update_model)
+    updated_schedule = get_schedule(test_schedule.id)
     assert updated_schedule
     assert updated_schedule.valorBase == update_model.valorBase
     assert updated_schedule.status == update_model.status
 
-    delete_schedule(test_org_id, test_schedule.id)
-    assert get_schedule(test_org_id, test_schedule.id) is None
+    delete_schedule(test_schedule.id)
+    assert get_schedule(test_schedule.id) is None

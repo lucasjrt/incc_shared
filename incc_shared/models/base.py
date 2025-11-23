@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Any, ClassVar, Dict, Optional, Type
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from ulid import ULID
 
 
 class DynamoSerializableModel(BaseModel):
@@ -27,9 +26,7 @@ class DynamoBaseModel(DynamoSerializableModel):
     """
 
     # canonical key fields that commonly exist; subclasses may or may not use them
-    tenant: Optional[str] = Field(None, description="PK (e.g. ORG#<id>)")
     entity: Optional[str] = Field(None, description="SK (e.g. USER#<id>)")
-    orgId: ULID = Field(..., description="The ID this entity belongs to")
 
     # created/updated audit
     createdAt: Optional[datetime] = Field(None, description="ISO UTC timestamp")
@@ -44,13 +41,6 @@ class DynamoBaseModel(DynamoSerializableModel):
     # --- subclass override points ---
     # Template example: "USER#{userId}"
     ENTITY_TEMPLATE: ClassVar[Optional[str]] = None
-
-    @classmethod
-    def compute_pk(cls, values: Dict[str, Any]) -> Optional[str]:
-        try:
-            return f"ORG#{values['orgId']}"
-        except KeyError:
-            raise ValueError("orgId is expected on every entity")
 
     @classmethod
     def compute_sk(cls, values: Dict[str, Any]) -> Optional[str]:
@@ -81,11 +71,8 @@ class DynamoBaseModel(DynamoSerializableModel):
         """
         values = self.model_dump()
 
-        # Compute tenant/entity if template provided
-        computed_pk = self.__class__.compute_pk(values)
-        computed_sk = self.__class__.compute_sk(values)
-        self.tenant = computed_pk
-        self.entity = computed_sk
+        # Compute entity if template provided
+        self.entity = self.__class__.compute_sk(values)
 
         # compute GSIs and set them on instance
         computed_gsis = self.__class__.compute_additional_gsis(values) or {}

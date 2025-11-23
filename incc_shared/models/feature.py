@@ -1,7 +1,15 @@
 from enum import Enum
+from functools import cached_property
 from typing import List, Optional, Tuple, overload
 
-from pydantic import Field, field_serializer, field_validator
+from pydantic import (
+    Field,
+    ValidationError,
+    computed_field,
+    field_serializer,
+    field_validator,
+)
+from ulid import ULID
 
 from incc_shared.models.base import DynamoSerializableModel
 
@@ -69,10 +77,19 @@ class Feature(DynamoSerializableModel):
 
 
 class PermissionedEntity(DynamoSerializableModel):
+    tenant: str
     features: List[Feature] = Field(
         default_factory=list,
         description="Feature list each in format action:resource[:modifier]",
     )
+
+    @computed_field
+    @cached_property
+    def orgId(self) -> ULID:
+        try:
+            return ULID.from_str(self.tenant.split("#")[1])
+        except IndexError:
+            raise ValidationError("Tenant must be on format ORG#{ID}")
 
     @field_validator("features", mode="before")
     @classmethod

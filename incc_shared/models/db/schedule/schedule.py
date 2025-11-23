@@ -2,6 +2,7 @@ from typing import Any, Dict, Optional
 
 from pydantic import ValidationError
 
+from incc_shared.auth.context import get_context_entity
 from incc_shared.models.base import DynamoBaseModel
 from incc_shared.models.db.schedule.base import ScheduleBase
 
@@ -13,7 +14,8 @@ class ScheduleModel(ScheduleBase, DynamoBaseModel):
     def compute_additional_gsis(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Optional[str]]:
-        org_id = values.get("orgId")
+        # TODO: This might cause issues if user is an admin acting on another org
+        org_id = values.get("orgId", get_context_entity().orgId)
         if not org_id:
             raise ValidationError("Every item must have org id")
 

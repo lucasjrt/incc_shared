@@ -2,7 +2,6 @@ import boto3
 from boto3.dynamodb.conditions import Key
 from mypy_boto3_cognito_idp.type_defs import AdminCreateUserResponseTypeDef
 from pydantic import EmailStr
-from ulid import ULID
 
 from incc_shared.auth.constants import get_cognito_pool_id
 from incc_shared.auth.context import get_context_entity
@@ -12,9 +11,10 @@ from incc_shared.exceptions.http import Conflict
 from incc_shared.models.db.indexes import UserIndexModel
 from incc_shared.models.db.indexes.email_index import EmailIndexModel
 from incc_shared.models.db.user import UserModel
-from incc_shared.models.feature import Feature, Resource, Scope
+from incc_shared.models.feature import Feature, Resource
 from incc_shared.models.request.user.create import CreateUserModel
-from incc_shared.service import (
+from incc_shared.service.organization import get_org
+from incc_shared.service.storage.dynamodb import (
     create_dynamo_item,
     delete_dynamo_item,
     get_dyanmo_index_item,
@@ -22,7 +22,6 @@ from incc_shared.service import (
     get_dynamo_key,
     list_dynamo_entity,
 )
-from incc_shared.service.org import get_org
 
 BASE_FEATURES = [Feature.read(Resource.org)]
 
@@ -37,22 +36,10 @@ def get_sub(cognito_user: AdminCreateUserResponseTypeDef):
             return sub
 
 
-def validate_create_permission(org_id: ULID):
+def create_user(model: CreateUserModel):
     creator = get_context_entity()
-    if not creator:
-        raise PermissionDenied("No entity is set to creator")
-
     if not creator.has_permission(Feature.write(Resource.org)):
         raise PermissionDenied("No permission to create user")
-
-    if creator.orgId != org_id and not creator.has_permission(
-        Feature.write(Resource.org, Scope.all)
-    ):
-        raise PermissionDenied("No permission to create user in another organization")
-
-
-def create_user(org_id: ULID, model: CreateUserModel):
-    validate_create_permission(org_id)
 
     if get_user_by_email(model.email):
         raise Conflict("User already exists")
@@ -69,7 +56,7 @@ def create_user(org_id: ULID, model: CreateUserModel):
         print("UNEXPECTED - User already exists in Cognito, but not in DyanamoDB")
         raise Conflict("User exists in Cognito")
 
-    org = get_org(org_id)
+    org = get_org()
     if not org:
         raise InvalidState("Tried to create user in an inexistent org")
 
@@ -80,9 +67,9 @@ def create_user(org_id: ULID, model: CreateUserModel):
         )
 
     user_attr = {
+        "tenant": f"ORG#{org.orgId}",
         "id": user_id,
         "email": model.email,
-        "orgId": org_id,
         "features": BASE_FEATURES,
     }
 
@@ -95,12 +82,12 @@ def create_user(org_id: ULID, model: CreateUserModel):
     return user_id
 
 
-def list_users(org_id: ULID):
-    return list_dynamo_entity(org_id, EntityType.user, UserModel)
+def list_users():
+    return list_dynamo_entity(EntityType.user, UserModel)
 
 
-def get_user(org_id: ULID, username: str):
-    key = get_dynamo_key(org_id, EntityType.user, username)
+def get_user(username: str):
+    key = get_dynamo_key(EntityType.user, username)
     return get_dynamo_item(key, UserModel)
 
 
@@ -116,6 +103,6 @@ def get_user_by_email(email: EmailStr):
     return get_dyanmo_index_item("email_index", condition, EmailIndexModel)
 
 
-def delete_user(org_id: ULID, user_id: str):
-    key = get_dynamo_key(org_id, EntityType.user, user_id)
+def delete_user(user_id: str):
+    key = get_dynamo_key(EntityType.user, user_id)
     delete_dynamo_item(key)

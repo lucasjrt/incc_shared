@@ -1,6 +1,5 @@
 import os
 from datetime import date, timedelta
-from typing import Any
 
 import boto3
 import pytest
@@ -8,21 +7,18 @@ from moto import mock_aws
 from mypy_boto3_dynamodb.service_resource import Table
 from ulid import ULID
 
+from incc_shared.admin.service.organization import create_organization
 from incc_shared.auth.constants import get_cognito_pool_id
 from incc_shared.auth.context import set_context_entity
-from incc_shared.constants import EntityType
-from incc_shared.exceptions.errors import InvalidState
 from incc_shared.models.db.customer import CustomerModel
-from incc_shared.models.db.organization import OrganizationModel
 from incc_shared.models.db.user.user import UserModel
 from incc_shared.models.feature import Feature, Resource
 from incc_shared.models.request.customer.create import CreateCustomerModel
 from incc_shared.models.request.schedule.create import CreateScheduleModel
-from incc_shared.service import get_dynamo_key
 from incc_shared.service.customer import create_customer, delete_customer, get_customer
-from incc_shared.service.org import create_organization
+from incc_shared.service.organization import get_org
 from incc_shared.service.schedule import create_schedule, delete_schedule, get_schedule
-from incc_shared.service.user import get_sub, get_user, get_user_by_email
+from incc_shared.service.user import get_sub
 
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 REGION = "sa-east-1"
@@ -99,6 +95,7 @@ def table():
         new_table.wait_until_exists()
         new_table = dynamo.Table(DYNAMODB_TABLE)
 
+        # Create cognito resources
         cognito = boto3.client("cognito-idp", region_name=REGION)
 
         pool = cognito.create_user_pool(PoolName="testing")
@@ -117,6 +114,7 @@ def table():
         os.environ["COGNITO_POOL_ID"] = pool_id
         os.environ["COGNITO_CLIENT_ID"] = client_id
 
+        # Create test user and organization
         auth_user = cognito.admin_create_user(
             UserPoolId=get_cognito_pool_id(),
             Username=MOCK_USER_EMAIL,
@@ -124,6 +122,7 @@ def table():
         )
         user_id = get_sub(auth_user)
         user_attr = {
+            "tenant": f"ORG#{TEST_TENANT}",
             "id": user_id,
             "email": MOCK_USER_EMAIL,
             "orgId": TEST_TENANT,
@@ -137,18 +136,30 @@ def table():
         new_table.put_item(Item=user.to_item())
         set_context_entity(user)
 
+        create_organization(TEST_TENANT)
+        org = get_org()
+        assert org
+        assert org.nossoNumero == 1
+
         yield new_table
 
 
 @pytest.fixture(autouse=True)
 def clean_table_between_tests(table: Table):
     """Ensure every test runs on a clean table but test user."""
+
+    def should_persist(it: dict):
+        entity = str(it.get("entity"))
+        return (entity.startswith("USER#") and it.get("email") == MOCK_USER_EMAIL) or (
+            entity == f"ORG#{TEST_TENANT}"
+        )
+
     resp = table.scan(ProjectionExpression="tenant, entity, email")
     items = resp.get("Items", [])
+
     with table.batch_writer() as bw:
         for it in items:
-            entity = str(it.get("entity"))
-            if entity.startswith("USER#") and it.get("email") == MOCK_USER_EMAIL:
+            if should_persist(it):
                 continue
             bw.delete_item(Key={"tenant": it["tenant"], "entity": it["entity"]})
     yield
@@ -157,55 +168,43 @@ def clean_table_between_tests(table: Table):
     items = resp.get("Items", [])
     with table.batch_writer() as bw:
         for it in items:
-            entity = str(it.get("entity"))
-            if entity.startswith("USER#") and it.get("email") == MOCK_USER_EMAIL:
+            if should_persist(it):
                 continue
             bw.delete_item(Key={"tenant": it["tenant"], "entity": it["entity"]})
 
 
 @pytest.fixture
-def test_org_id(table):
-    org_id = TEST_TENANT
-    create_organization(org_id)
-    yield org_id
-    key = get_dynamo_key(org_id, EntityType.organization, org_id)
-    table.delete_item(Key=key)
-
-
-@pytest.fixture
-def test_customer(test_org_id: ULID, customer_data):
-    customer_id = create_customer(test_org_id, CreateCustomerModel(**customer_data))
-    customer = get_customer(test_org_id, customer_id)
+def test_customer(customer_data):
+    customer_id = create_customer(CreateCustomerModel(**customer_data))
+    customer = get_customer(customer_id)
     assert customer
     return customer
 
 
 @pytest.fixture
-def test_customer_2(test_org_id: ULID, customer_data):
-    customer_id = create_customer(test_org_id, CreateCustomerModel(**customer_data))
-    customer = get_customer(test_org_id, customer_id)
+def test_customer_2(customer_data):
+    customer_id = create_customer(CreateCustomerModel(**customer_data))
+    customer = get_customer(customer_id)
     assert customer
     yield customer
-    delete_customer(test_org_id, customer.customerId)
+    delete_customer(customer.customerId)
 
 
 @pytest.fixture
-def test_schedule(test_org_id: ULID, schedule_data):
-    schedule_id = create_schedule(test_org_id, CreateScheduleModel(**schedule_data))
-    schedule = get_schedule(test_org_id, schedule_id)
+def test_schedule(schedule_data):
+    schedule_id = create_schedule(CreateScheduleModel(**schedule_data))
+    schedule = get_schedule(schedule_id)
     assert schedule
     return schedule
 
 
 @pytest.fixture
-def test_schedule_balao(test_org_id: ULID, schedule_balao_data: dict):
-    schedule_id = create_schedule(
-        test_org_id, CreateScheduleModel(**schedule_balao_data)
-    )
-    schedule = get_schedule(test_org_id, schedule_id)
+def test_schedule_balao(schedule_balao_data: dict):
+    schedule_id = create_schedule(CreateScheduleModel(**schedule_balao_data))
+    schedule = get_schedule(schedule_id)
     assert schedule
     yield schedule
-    delete_schedule(test_org_id, schedule.id)
+    delete_schedule(schedule.id)
 
 
 @pytest.fixture
