@@ -143,6 +143,27 @@ def update_dynamo_item(key: dict, update: dict):
     return resp.get("Attributes")
 
 
+def set_dynamo_item(to_set: dict):
+    """Sets the fields to an existing item"""
+    to_set["updatedAt"] = utc_now_iso()
+
+    context_user = get_context_entity()
+    if not context_user:
+        raise InvalidState("No user is set to context during item update")
+    to_set["updatedBy"] = context_user.entity
+
+    try:
+        resp = table.put_item(
+            Item=to_set,
+            ConditionExpression=Attr("tenant").exists() & Attr("entity").exists(),
+        )
+        return resp.get("Attributes")
+    except ClientError as e:
+        if e.response.get("Error", {}).get("Code") == "ConditionalCheckFailedException":
+            raise InvalidState("Item does not exist for the given tenant/entity") from e
+        raise
+
+
 def create_dynamo_item(item: dict):
     tenant = item.get("tenant")
     if not tenant:

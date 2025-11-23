@@ -6,21 +6,13 @@ from ulid import ULID
 
 
 class DynamoSerializableModel(BaseModel):
-    # convert to dict suitable for boto3 put_item (plain python types)
     def to_item(self, exclude_none: bool = True) -> Dict[str, Any]:
-        d = self.model_dump(mode="json")
-        if exclude_none:
-            d = {k: v for k, v in d.items() if v is not None}
-        return d
+        return self.model_dump(mode="json", exclude_none=exclude_none)
 
     @classmethod
     def from_item(
         cls: Type["DynamoSerializableModel"], item: Dict[str, Any]
     ) -> "DynamoSerializableModel":
-        """
-        Construct model from DynamoDB item (plain dict). Any missing computed
-        keys will be recomputed by the model validator.
-        """
         return cls(**item)
 
 

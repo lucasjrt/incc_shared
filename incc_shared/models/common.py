@@ -23,3 +23,11 @@ class Juros(DynamoSerializableModel):
     prazo: int = Field(
         ..., description="Número de dias depois do vencimento para cobrar os juros"
     )
+
+
+def get_default_juros():
+    return Juros(tipo=TipoJuros.taxa, valor=Decimal(1), prazo=0)
+
+
+def get_default_multa():
+    return Juros(tipo=TipoJuros.taxa, valor=Decimal(2), prazo=0)

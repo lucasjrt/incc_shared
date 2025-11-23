@@ -5,13 +5,14 @@ from pydantic import EmailStr
 from ulid import ULID
 
 from incc_shared.auth.constants import get_cognito_pool_id
+from incc_shared.auth.context import get_context_entity
 from incc_shared.constants import EntityType
-from incc_shared.exceptions.errors import InvalidState
+from incc_shared.exceptions.errors import InvalidState, PermissionDenied
 from incc_shared.exceptions.http import Conflict
 from incc_shared.models.db.indexes import UserIndexModel
 from incc_shared.models.db.indexes.email_index import EmailIndexModel
 from incc_shared.models.db.user import UserModel
-from incc_shared.models.feature import Feature, Resource
+from incc_shared.models.feature import Feature, Resource, Scope
 from incc_shared.models.request.user.create import CreateUserModel
 from incc_shared.service import (
     create_dynamo_item,
@@ -36,7 +37,23 @@ def get_sub(cognito_user: AdminCreateUserResponseTypeDef):
             return sub
 
 
+def validate_create_permission(org_id: ULID):
+    creator = get_context_entity()
+    if not creator:
+        raise PermissionDenied("No entity is set to creator")
+
+    if not creator.has_permission(Feature.write(Resource.org)):
+        raise PermissionDenied("No permission to create user")
+
+    if creator.orgId != org_id and not creator.has_permission(
+        Feature.write(Resource.org, Scope.all)
+    ):
+        raise PermissionDenied("No permission to create user in another organization")
+
+
 def create_user(org_id: ULID, model: CreateUserModel):
+    validate_create_permission(org_id)
+
     if get_user_by_email(model.email):
         raise Conflict("User already exists")
 

@@ -1,10 +1,8 @@
-from decimal import Decimal
-
 from ulid import ULID
 
 from incc_shared.constants import EntityType
 from incc_shared.exceptions.errors import InvalidState
-from incc_shared.models.common import Juros, TipoJuros
+from incc_shared.models.common import get_default_juros, get_default_multa
 from incc_shared.models.db.boleto.base import StatusBoleto
 from incc_shared.models.db.boleto.boleto import BoletoModel
 from incc_shared.models.db.organization import OrganizationModel
@@ -31,14 +29,6 @@ def update_nosso_numero(org: OrganizationModel):
     nossoNumero = org.nossoNumero + 1
     patch_org = UpdateOrganizationModel(nossoNumero=nossoNumero)
     update_organization(org.orgId, patch_org)
-
-
-def get_default_juros():
-    return Juros(tipo=TipoJuros.taxa, valor=Decimal(1), prazo=0)
-
-
-def get_default_multa():
-    return Juros(tipo=TipoJuros.taxa, valor=Decimal(2), prazo=0)
 
 
 def create_boleto(org_id: ULID, boleto: CreateBoletoModel):
