@@ -7,7 +7,7 @@ from incc_shared.models.db.organization.organization import OrganizationModel
 from incc_shared.service.storage.dynamodb import create_dynamo_item
 
 
-def create_organization(org_id: Optional[ULID]):
+def create_organization(org_id: Optional[ULID] = None):
     if not org_id:
         org_id = ULID()
 
