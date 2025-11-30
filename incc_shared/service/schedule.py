@@ -36,9 +36,14 @@ def create_schedule(schedule: CreateScheduleModel):
     return scheduleId
 
 
-def update_schedule(schedule_id: ULID, to_update: UpdateScheduleModel):
+def update_schedule(
+    schedule_id: ULID, to_update: UpdateScheduleModel, remove_from_index=False
+):
     key = get_dynamo_key(EntityType.schedule, schedule_id)
-    return update_dynamo_item(key, to_update.to_item())
+    remove_paths = []
+    if remove_from_index:
+        remove_paths.append("proximaExecucao")
+    return update_dynamo_item(key, to_update.to_item(), remove_paths=remove_paths)
 
 
 def delete_schedule(schedule_id: ULID):

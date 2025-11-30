@@ -1,3 +1,4 @@
+import time
 from typing import Any, Optional, Type
 
 from boto3.dynamodb.conditions import Attr, ConditionBase, Key
@@ -6,9 +7,11 @@ from ulid import ULID
 
 from incc_shared.auth.context import get_context_entity
 from incc_shared.constants import EntityType
-from incc_shared.exceptions.errors import Conflict, InvalidState
+from incc_shared.exceptions.errors import Conflict, IdempotencyError, InvalidState
 from incc_shared.models.helper import utc_now_iso
 from incc_shared.service.storage.base import M, table, to_model
+
+LOCK_DURATION = 3600  # 1 hour
 
 
 def get_dynamo_key(entityType: EntityType, entityId: ULID | str):
@@ -65,7 +68,7 @@ def _flatten_updates(
         out[prefix] = obj
 
 
-def update_dynamo_item(key: dict, update: dict):
+def update_dynamo_item(key: dict, update: dict, remove_paths: list[str] = []):
     update.pop("tenant", None)
     update.pop("entity", None)
     update["updatedAt"] = utc_now_iso()
@@ -80,6 +83,7 @@ def update_dynamo_item(key: dict, update: dict):
         _flatten_updates((k,), v, flat)
 
     set_clauses = []
+    remove_clauses = []
     expr_names = {}
     expr_vals = {}
     for i, (path_tuple, value) in enumerate(flat.items()):
@@ -93,10 +97,28 @@ def update_dynamo_item(key: dict, update: dict):
         set_clauses.append(f"{path_expr} = {val_key}")
         expr_vals[val_key] = value
 
-    if not set_clauses:
+    start_idx = len(flat)
+    for k, dotted_path in enumerate(remove_paths):
+        path_tuple = dotted_path.split(".")
+        name_placeholders = []
+        for j, seg in enumerate(path_tuple):
+            ph = f"#n{start_idx + k}_{j}"
+            name_placeholders.append(ph)
+            expr_names[ph] = seg
+        path_expr = ".".join(name_placeholders)
+        remove_clauses.append(path_expr)
+
+    if not set_clauses and not remove_clauses:
         return None
 
-    update_expr = "SET " + ", ".join(set_clauses)
+    parts = []
+    if set_clauses:
+        parts.append("SET " + ", ".join(set_clauses))
+    if remove_clauses:
+        parts.append("REMOVE " + ", ".join(remove_clauses))
+
+    update_expr = " ".join(parts)
+
     resp = table.update_item(
         Key=key,
         UpdateExpression=update_expr,
@@ -131,7 +153,7 @@ def set_dynamo_item(to_set: dict):
         raise
 
 
-def create_dynamo_item(item: dict):
+def create_dynamo_item(item: dict, extra_condition: Optional[ConditionBase] = None):
     context_user = get_context_entity()
     org_id = str(context_user.orgId)
     if not org_id:
@@ -148,10 +170,14 @@ def create_dynamo_item(item: dict):
     item["createdAt"] = utc_now_iso()
     item["createdBy"] = context_user.entity
 
+    condition: ConditionBase = Attr("tenant").not_exists() & Attr("entity").not_exists()
+    if extra_condition is not None:
+        condition &= extra_condition
+
     try:
         table.put_item(
             Item=item,
-            ConditionExpression=Attr(tenant).not_exists() & Attr(entity).not_exists(),
+            ConditionExpression=condition,
         )
     except ClientError as e:
         error_code = e.response.get("Error", {}).get("Code")
@@ -197,18 +223,77 @@ def list_dynamo_entity(entity_type: EntityType, model: Type[M]):
 
 
 def list_dynamo_items(
-    condition: ConditionBase, model: Type[M], index_name: Optional[str] = None
+    condition: ConditionBase,
+    model: Type[M],
+    **kwargs,
 ):
-    kwargs: dict[str, Any] = {
+    query_args: dict[str, Any] = {
         "KeyConditionExpression": condition,
     }
-    if index_name:
-        kwargs["IndexName"] = index_name
 
-    response = table.query(**kwargs)
+    response = table.query(**query_args, **kwargs)
 
     if response.get("LastEvaluatedKey"):
         # TODO: SNS here, as it's not yet supported
         print("Pagination is expected, user data is now incomplete")
 
     return [to_model(c, model) for c in response["Items"]]
+
+
+def _lock_entity_key(entity_type: EntityType, idempotency_key: str) -> str:
+    return f"LOCK#{entity_type.value}#{idempotency_key}"
+
+
+def get_lock(tenant: str, entity: str):
+    return table.get_item(Key={"tenant": tenant, "entity": entity}).get("Item")
+
+
+def acquire_idempotency_lock(
+    entity_type: EntityType,
+    lock_key: str,
+    target_entity: Optional[str] = None,
+    metadata: Optional[dict[str, Any]] = None,
+) -> dict:
+    context_user = get_context_entity()
+    if not context_user:
+        raise ValueError("No context user set")
+
+    org_id = str(context_user.orgId)
+    tenant = f"ORG#{org_id}"
+
+    entity = _lock_entity_key(entity_type, lock_key)
+    now = utc_now_iso()
+
+    expires_at = int(time.time()) + LOCK_DURATION
+    item: dict = {
+        "tenant": tenant,
+        "entity": entity,
+        "orgId": org_id,
+        "createdAt": now,
+        "createdBy": context_user.entity,
+        "ttl": expires_at,
+    }
+    if target_entity:
+        item["targetEntity"] = target_entity
+    if metadata:
+        item["metadata"] = metadata
+
+    try:
+        table.put_item(
+            Item=item,
+            ConditionExpression=(
+                Attr("tenant").not_exists() & Attr("entity").not_exists()
+            ),
+        )
+        return item
+    except ClientError as e:
+        error_code = e.response.get("Error", {}).get("Code")
+        if error_code == "ConditionalCheckFailedException":
+            lock = get_lock(tenant, entity)
+            if not lock:
+                raise InvalidState("Failed to acquire lock, but couldn't get it") from e
+
+            raise IdempotencyError(
+                "Failed to acquire lock: already created", metadata=lock.get("metadata")
+            ) from e
+        raise

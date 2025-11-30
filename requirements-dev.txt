@@ -1,4 +1,5 @@
 boto3
+freezegun
 moto[s3,dynamodb,cognitoidp]
 pytest
 pytest-env

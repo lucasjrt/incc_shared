@@ -40,16 +40,15 @@ def create_boleto(boleto: CreateBoletoModel):
         else:
             boleto.multa = get_default_multa()
 
-    model = boleto.to_item()
-    item = BoletoModel(
+    model = BoletoModel(
         nossoNumero=nosso_numero,
         status=[StatusBoleto.emitido],
-        **model,
+        **boleto.to_item(),
     )
 
     # TODO: Criar boleto da caixa aqui e, se der errado, solta uma exceção
 
-    create_dynamo_item(item.to_item())
+    create_dynamo_item(model.to_item())
 
     update_nosso_numero(org)
 

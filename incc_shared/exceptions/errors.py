@@ -1,3 +1,6 @@
+from typing import Any, Optional
+
+
 class AppError(Exception):
     def __init__(self, code="unexpected_error", message="An unexpected error happened"):
         self.code = code
@@ -28,3 +31,11 @@ class NotFound(AppError):
 class PermissionDenied(AppError):
     def __init__(self, message="Permission denied"):
         super().__init__(code="permission_denied", message=message)
+
+
+class IdempotencyError(AppError):
+    metadata: Optional[dict[str, Any]]
+
+    def __init__(self, message="Idempotency error", metadata=None):
+        super().__init__(code="idempotency_error", message=message)
+        self.metadata = metadata

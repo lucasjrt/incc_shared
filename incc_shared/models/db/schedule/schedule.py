@@ -9,6 +9,7 @@ from incc_shared.models.db.schedule.base import ScheduleBase
 
 class ScheduleModel(ScheduleBase, DynamoBaseModel):
     ENTITY_TEMPLATE = "SCHEDULE#{id}"
+    gsi_org_sk: Optional[str] = None
 
     @classmethod
     def compute_additional_gsis(

@@ -1,5 +1,6 @@
 from datetime import date
 from enum import Enum
+from typing import Optional
 
 from pydantic import Field, model_validator
 from ulid import ULID
@@ -35,8 +36,9 @@ class ScheduleBase(DynamoSerializableModel):
     )
     status: ScheduleStatus = ScheduleStatus.ativo
     parcelasEmitidas: int = 0
-    proximaExecucao: date = Field(
-        ..., description="Indice usado pelo executor para listar os agendamentos do dia"
+    proximaExecucao: Optional[date] = Field(
+        None,
+        description="Indice usado pelo executor para listar os agendamentos do dia",
     )
     dataInicio: date = Field(
         default_factory=date.today,

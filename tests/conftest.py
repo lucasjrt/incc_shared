@@ -9,7 +9,7 @@ from ulid import ULID
 
 from incc_shared.admin.service.organization import create_organization
 from incc_shared.auth.constants import get_cognito_pool_id
-from incc_shared.auth.context import impersonate, set_context_entity
+from incc_shared.auth.context import set_context_entity
 from incc_shared.models.db.customer import CustomerModel
 from incc_shared.models.db.user.user import UserModel
 from incc_shared.models.feature import Feature, Resource, Scope
@@ -20,10 +20,14 @@ from incc_shared.service.organization import get_org
 from incc_shared.service.schedule import create_schedule, delete_schedule, get_schedule
 from incc_shared.service.user import get_sub
 
+today = date.today()
+
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 REGION = "sa-east-1"
 TEST_TENANT = ULID()
 MOCK_USER_EMAIL = "john.doe@example.com"
+SCHEDULE_DATE = date(2020, 1, 13)
+STORAGE_BUCKET = os.environ["STORAGE_BUCKET"]
 
 
 @pytest.fixture(scope="session")
@@ -141,6 +145,20 @@ def table():
         assert org
         assert org.nossoNumero == 1
 
+        s3 = boto3.client("s3")
+        s3.create_bucket(
+            Bucket=STORAGE_BUCKET,
+            CreateBucketConfiguration={
+                "LocationConstraint": "sa-east-1",
+            },
+        )
+        with open("tests/history.json") as f:
+            s3.put_object(
+                Body=f.read(),
+                Bucket=STORAGE_BUCKET,
+                Key="incc-index/history.json",
+            )
+
         yield new_table
 
 
@@ -195,7 +213,8 @@ def test_schedule(schedule_data):
     schedule_id = create_schedule(CreateScheduleModel(**schedule_data))
     schedule = get_schedule(schedule_id)
     assert schedule
-    return schedule
+    yield schedule
+    delete_schedule(schedule_id)
 
 
 @pytest.fixture
@@ -248,7 +267,6 @@ def customer_data2():
 
 @pytest.fixture
 def boleto_data(test_customer: CustomerModel):
-    today = date.today()
     vencimento = today + timedelta(days=30)
     return {
         "valor": 10,
@@ -260,9 +278,8 @@ def boleto_data(test_customer: CustomerModel):
 
 @pytest.fixture
 def schedule_data(test_customer: CustomerModel):
-    today = date.today()
-    vencimento = today + timedelta(days=30)
-    dataInicio = today + timedelta(days=7)
+    vencimento = SCHEDULE_DATE + timedelta(days=30)
+    dataInicio = SCHEDULE_DATE
     return {
         "valorBase": 10,
         "pagador": test_customer.customerId,
@@ -277,4 +294,5 @@ def schedule_balao_data(schedule_data: dict):
     balao_data = schedule_data.copy()
     balao_data["intervaloParcelas"] = 6
     balao_data["parcelas"] = 3
+    balao_data["valorBase"] = 1000
     return balao_data

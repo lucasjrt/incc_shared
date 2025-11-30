@@ -15,3 +15,5 @@ class UpdateScheduleModel(DynamoSerializableModel):
     vencimento: Optional[date] = None
     parcelas: Optional[int] = None
     dataInicio: Optional[date] = None
+    proximaExecucao: Optional[date] = None
+    parcelasEmitidas: Optional[int] = None
