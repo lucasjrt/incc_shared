@@ -1,6 +1,7 @@
+from typing import TYPE_CHECKING
+
 import boto3
 from boto3.dynamodb.conditions import Key
-from mypy_boto3_cognito_idp.type_defs import AdminCreateUserResponseTypeDef
 from pydantic import EmailStr
 
 from incc_shared.auth.constants import get_cognito_pool_id
@@ -22,6 +23,9 @@ from incc_shared.service.storage.dynamodb import (
     get_dynamo_key,
     list_dynamo_entity,
 )
+
+if TYPE_CHECKING:
+    from mypy_boto3_cognito_idp.type_defs import AdminCreateUserResponseTypeDef
 
 BASE_FEATURES = [Feature.read(Resource.org)]
 
