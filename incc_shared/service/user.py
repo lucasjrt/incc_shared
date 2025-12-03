@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 BASE_FEATURES = [Feature.read(Resource.org)]
 
 
-def get_sub(cognito_user: AdminCreateUserResponseTypeDef):
+def get_sub(cognito_user: "AdminCreateUserResponseTypeDef"):
     attrs = cognito_user.get("User", {}).get("Attributes", [])
     for attr in attrs:
         if attr.get("Name") == "sub":
